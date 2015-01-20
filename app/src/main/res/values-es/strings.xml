@@ -1,2 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="action_about">Acerca</string>
+    <string name="instructions">Por favor, ponga el ECG en una superficie plana antes de inicio.</string>
+    <string name="action_settings">Ajustes</string>
+    <string name="start">Iniciar</string>
+</resources>
