@@ -4,4 +4,5 @@
     <string name="instructions">Por favor, ponga el ECG en una superficie plana antes de inicio.</string>
     <string name="action_settings">Ajustes</string>
     <string name="start">Iniciar</string>
+    <string name="text_about">Esta aplicación trata de evaluar ECG\'s.\nFue desarrollado con fondos del Ministério das Comunicações de Brasil</string>
 </resources>

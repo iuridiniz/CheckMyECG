@@ -4,4 +4,5 @@
     <string name="action_about">Sobre</string>
     <string name="instructions">Por favor, coloque o ECG em uma superfície plana, antes de começar.</string>
     <string name="start">Iniciar</string>
+    <string name="text_about">Este aplicativo tenta avaliar ECG\'s.\nEle foi desenvolvido usando recursos do Ministério das Comunicações do Brasil</string>
 </resources>
