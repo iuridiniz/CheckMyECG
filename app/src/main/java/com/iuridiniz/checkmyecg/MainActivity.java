@@ -50,11 +50,9 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void showAboutDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(R.string.action_about);
-        builder.setMessage(R.string.text_about);
-
-        builder.show();
-
+        new AlertDialog.Builder(this)
+            .setTitle(R.string.action_about)
+            .setMessage(R.string.text_about)
+            .show();
     }
 }
