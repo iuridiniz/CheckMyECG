@@ -6,5 +6,5 @@
     <string name="instructions">Please, put the EKG in a plane surface before start.</string>
     <string name="start">Start</string>
     <string name="text_about">This application tries to evaluate EKG\'s.\nIt was developed using resources from Brazilian Ministério das Comunicações</string>
-
+    <string name="title_activity_camera" translatable="false">Camera</string>
 </resources>

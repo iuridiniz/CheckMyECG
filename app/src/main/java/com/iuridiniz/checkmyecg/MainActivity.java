@@ -1,8 +1,9 @@
 package com.iuridiniz.checkmyecg;
 
 import android.app.AlertDialog;
-import android.support.v7.app.ActionBarActivity;
+import android.content.Intent;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -12,6 +13,7 @@ import android.widget.Button;
 public class MainActivity extends ActionBarActivity {
 
     Button mStartButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -21,6 +23,8 @@ public class MainActivity extends ActionBarActivity {
             @Override
             public void onClick(View v) {
                 /* start the camera activity */
+                Intent intent = new Intent(MainActivity.this, CameraActivity.class);
+                startActivity(intent);
             }
         });
     }
@@ -51,8 +55,8 @@ public class MainActivity extends ActionBarActivity {
 
     private void showAboutDialog() {
         new AlertDialog.Builder(this)
-            .setTitle(R.string.action_about)
-            .setMessage(R.string.text_about)
-            .show();
+                .setTitle(R.string.action_about)
+                .setMessage(R.string.text_about)
+                .show();
     }
 }
