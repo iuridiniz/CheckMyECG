@@ -1,15 +1,18 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:opencv="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
     tools:context="com.iuridiniz.checkmyecg.CameraActivity">
 
-    <FrameLayout
-        android:id="@+id/camera_preview"
+    <org.opencv.android.JavaCameraView
+        android:id="@+id/camera_view"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:layout_weight="1" />
+        android:visibility="gone"
+        opencv:camera_id="back"
+        opencv:show_fps="true" />
 
     <ImageButton
         android:id="@+id/capture_button"
