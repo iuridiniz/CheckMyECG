@@ -310,12 +310,12 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         bottomLeft = mGraphFilter.apply(src);
         bottomRight = mContrastFilter.apply(src);
 
-        drawMini(src, bottomLeft, topLeft, topRight, bottomRight);
+        drawMini(src, topLeft, bottomLeft, topRight, bottomRight);
 
         return src;
     }
 
-    private void drawMini(Mat dst, Mat bottomLeft, Mat topLeft, Mat topRight, Mat bottomRight) {
+    private void drawMini(Mat dst, Mat topLeft, Mat bottomLeft, Mat topRight, Mat bottomRight) {
         int dstHeight = dst.rows();
         int dstWidth = dst.cols();
 
