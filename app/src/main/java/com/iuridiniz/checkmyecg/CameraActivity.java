@@ -305,10 +305,17 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
         src = inputFrame.rgba();
 
-        //topRight = mNormalizeFilter.apply(src);
-        topLeft = mGradeFilter.apply(src);
-        bottomLeft = mGraphFilter.apply(src);
-        bottomRight = mContrastFilter.apply(src);
+        Mat grade = mGradeFilter.apply(src);
+        Mat graph = mGraphFilter.apply(src);
+
+        Mat srcNormalized = mContrastFilter.apply(src);
+        Mat gradeNormalized = mGradeFilter.apply(srcNormalized);
+        Mat graphNormalized = mGraphFilter.apply(srcNormalized);
+
+        topLeft = grade;
+        bottomLeft = gradeNormalized;
+        topRight = graph;
+        bottomRight = graphNormalized;
 
         drawMini(src, topLeft, bottomLeft, topRight, bottomRight);
 
