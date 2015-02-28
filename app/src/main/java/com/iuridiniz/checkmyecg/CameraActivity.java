@@ -10,6 +10,7 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
 
 
 public class CameraActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -106,7 +107,44 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        return inputFrame.rgba();
+        /* show previews */
+        Mat src=null, bottomLeft=null, topLeft=null, topRight=null, bottomRight=null;
+
+        src = inputFrame.rgba();
+
+        drawMini(src, bottomLeft, topLeft, topRight, bottomRight);
+
+        return src;
     }
 
+    private void drawMini(Mat dst, Mat bottomLeft, Mat topLeft, Mat topRight, Mat bottomRight) {
+        int dstHeight = dst.rows();
+        int dstWidth = dst.cols();
+
+        int dstRoiHeight = dstHeight/3;
+        int dstRoiWidth  = dstWidth/3;
+
+        Mat dstRoi;
+
+        if (topLeft != null) {
+            /* draw topLeft into top left corner */
+            dstRoi = dst.submat(0, dstRoiHeight, 0, dstRoiWidth);
+            Imgproc.resize(topLeft, dstRoi, dstRoi.size());
+        }
+        if (bottomLeft != null) {
+            /* draw bottomLeft into bottom left corner */
+            dstRoi = dst.submat(dstHeight - dstRoiHeight, dstHeight, 0, dstRoiWidth);
+            Imgproc.resize(bottomLeft, dstRoi, dstRoi.size());
+        }
+        if (topRight != null) {
+            /* draw topRight into top right corner */
+            dstRoi = dst.submat(0, dstRoiHeight, dstWidth - dstRoiWidth, dstWidth);
+            Imgproc.resize(topRight, dstRoi, dstRoi.size());
+        }
+        if (bottomRight != null) {
+            /* draw bottomRight into bottom right corner */
+            dstRoi = dst.submat(dstHeight - dstRoiHeight, dstHeight, dstWidth - dstRoiWidth, dstWidth);
+            Imgproc.resize(bottomRight, dstRoi, dstRoi.size());
+        }
+    }
 }
