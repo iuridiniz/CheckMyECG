@@ -203,6 +203,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private boolean mOpenCvLoaded = false;
     private CameraBridgeViewBase mPreview;
 
+    private Filter mGradeFilter;
     private Filter mGraphFilter;
     private Filter mNormalizeFilter;
     private Filter mContrastFilter;
@@ -286,6 +287,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     @Override
     public void onCameraViewStarted(int width, int height) {
 
+        mGradeFilter = new GradeFilter(height, width);
         mGraphFilter = new GraphFilter(height, width);
         mNormalizeFilter = new NormalizerFilter(height, width, 100, 200);
         mContrastFilter = new ContrastFilter(height, width, 100, 140);
@@ -304,6 +306,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         src = inputFrame.rgba();
 
         topRight = mNormalizeFilter.apply(src);
+        topLeft = mGradeFilter.apply(src);
         bottomLeft = mGraphFilter.apply(src);
         bottomRight = mContrastFilter.apply(src);
 
