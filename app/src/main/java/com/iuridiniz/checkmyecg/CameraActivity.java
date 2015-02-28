@@ -305,7 +305,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
         src = inputFrame.rgba();
 
-        topRight = mNormalizeFilter.apply(src);
+        //topRight = mNormalizeFilter.apply(src);
         topLeft = mGradeFilter.apply(src);
         bottomLeft = mGraphFilter.apply(src);
         bottomRight = mContrastFilter.apply(src);
