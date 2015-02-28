@@ -77,6 +77,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private boolean mOpenCvLoaded = false;
     private CameraBridgeViewBase mPreview;
 
+    private Filter mNormalizeFilter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -156,6 +158,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     @Override
     public void onCameraViewStarted(int width, int height) {
 
+        mNormalizeFilter = new NormalizerFilter(height, width, 100, 200);
     }
 
     @Override
@@ -169,6 +172,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         Mat src=null, bottomLeft=null, topLeft=null, topRight=null, bottomRight=null;
 
         src = inputFrame.rgba();
+
+        topRight = mNormalizeFilter.apply(src);
 
         drawMini(src, bottomLeft, topLeft, topRight, bottomRight);
 
