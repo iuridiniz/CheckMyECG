@@ -31,7 +31,7 @@ class GradeFilter implements Filter {
     private Scalar mLowerRed1, mUpperRed1;
     private Scalar mLowerRed2, mUpperRed2;
 
-    public GradeFilter(int rows, int cols){
+    public GradeFilter(int rows, int cols) {
         mGray = new Mat(rows, cols, CvType.CV_8UC1);
         mMaskRed1 = new Mat(rows, cols, CvType.CV_8UC1);
         mMaskRed2 = new Mat(rows, cols, CvType.CV_8UC1);
@@ -44,11 +44,11 @@ class GradeFilter implements Filter {
         mLowerRed1 = new Scalar(0, 100, 100);
         mUpperRed1 = new Scalar(15, 255, 255);
 
-
         mLowerRed2 = new Scalar(230, 100, 100);
         mUpperRed2 = new Scalar(255, 255, 255);
 
     }
+
     @Override
     public Mat apply(Mat rgba) {
 
@@ -84,7 +84,7 @@ class GraphFilter implements Filter {
 
     private Scalar mLowerBlack, mUpperBlack;
 
-    public GraphFilter(int rows, int cols){
+    public GraphFilter(int rows, int cols) {
         mGray = new Mat(rows, cols, CvType.CV_8UC1);
         mMatMaskBlack = new Mat(rows, cols, CvType.CV_8UC1);
 
@@ -98,6 +98,7 @@ class GraphFilter implements Filter {
         mUpperBlack = new Scalar(255, 255, 100);
 
     }
+
     @Override
     public Mat apply(Mat rgba) {
 
@@ -179,8 +180,8 @@ class ContrastFilter implements Filter {
         mLut = new MatOfInt();
 
         SplineInterpolator si = new SplineInterpolator();
-        UnivariateFunction f = si.interpolate(new double[] {0, mMin, mMax, 255},
-                                              new double[] {0, 0, 255, 255});
+        UnivariateFunction f = si.interpolate(new double[]{0, mMin, mMax, 255},
+                new double[]{0, 0, 255, 255});
         /* create my mLut */
         mLut.create(256, 1, CvType.CV_8UC4);
 
@@ -286,7 +287,6 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     @Override
     public void onCameraViewStarted(int width, int height) {
-
         mGradeFilter = new GradeFilter(height, width);
         mGraphFilter = new GraphFilter(height, width);
         mNormalizeFilter = new NormalizerFilter(height, width, 100, 200);
@@ -301,7 +301,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     @Override
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         /* show previews */
-        Mat src=null, bottomLeft=null, topLeft=null, topRight=null, bottomRight=null;
+        Mat src = null, bottomLeft = null, topLeft = null, topRight = null, bottomRight = null;
 
         src = inputFrame.rgba();
 
@@ -326,8 +326,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         int dstHeight = dst.rows();
         int dstWidth = dst.cols();
 
-        int dstRoiHeight = dstHeight/3;
-        int dstRoiWidth  = dstWidth/3;
+        int dstRoiHeight = dstHeight / 3;
+        int dstRoiWidth = dstWidth / 3;
 
         Mat dstRoi;
 
