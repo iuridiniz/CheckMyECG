@@ -13,10 +13,13 @@ import org.opencv.core.MatOfInt;
 public class ContrastFilter implements Filter {
     private final Mat mRgbaDst;
     private final Mat mLut;
+    protected Mat mSrc;
     private boolean mHasResult;
 
     public ContrastFilter(int rows, int cols, int mMin, int mMax) {
         mRgbaDst = new Mat(rows, cols, CvType.CV_8UC4);
+        mSrc = new Mat(rows, cols, CvType.CV_8UC4);
+
         mLut = new MatOfInt();
 
         SplineInterpolator si = new SplineInterpolator();
@@ -33,6 +36,9 @@ public class ContrastFilter implements Filter {
 
     @Override
     public Mat apply(Mat src) {
+        /* save a copy */
+        src.copyTo(mSrc);
+
         Core.LUT(src, mLut, mRgbaDst);
         mHasResult = true;
         return mRgbaDst;
@@ -41,6 +47,11 @@ public class ContrastFilter implements Filter {
     public Mat getResult() {
         if (mHasResult)
             return mRgbaDst.clone();
+    }
+
+    public Mat getSrc() {
+        if (mHasResult)
+            return mSrc;
         return null;
     }
 }

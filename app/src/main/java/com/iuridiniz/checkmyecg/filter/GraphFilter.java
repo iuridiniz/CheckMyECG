@@ -11,6 +11,7 @@ import org.opencv.imgproc.Imgproc;
  */
 public class GraphFilter implements Filter {
 
+    protected Mat mSrc;
     protected Mat mGray;
     protected Mat mMatMaskBlack;
     protected Mat mMatMaskBlackInv; /* CV_8UC1 */
@@ -29,6 +30,7 @@ public class GraphFilter implements Filter {
 
         //mRgbaDst = new Mat(rows, cols, CvType.CV_8UC4, new Scalar(255));
         mRgbaDst = new Mat(rows, cols, CvType.CV_8UC4);
+        mSrc = new Mat(rows, cols, CvType.CV_8UC4);
 
         mLowerBlack = new Scalar(0, 0, 0);
         mUpperBlack = new Scalar(255, 255, 50);
@@ -37,6 +39,8 @@ public class GraphFilter implements Filter {
 
     @Override
     public Mat apply(Mat rgba) {
+        /* save a copy */
+        rgba.copyTo(mSrc);
 
         /* HSV first */
         Imgproc.cvtColor(rgba, mRgb, Imgproc.COLOR_RGBA2RGB);
