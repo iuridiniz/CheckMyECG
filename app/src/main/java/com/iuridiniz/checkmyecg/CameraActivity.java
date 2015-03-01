@@ -78,15 +78,18 @@ class GradeFilter implements Filter {
 
 class GraphFilter implements Filter {
 
-    private Mat mGray, mMatMaskBlack; /* CV_8UC1 */
-    private Mat mRgb, mHsv; /* CV_8UC3 */
-    private Mat mRgbaDst; /* CV_8UC4 */
+    protected Mat mGray;
+    protected Mat mMatMaskBlack;
+    protected Mat mMatMaskBlackInv; /* CV_8UC1 */
+    protected Mat mRgb, mHsv; /* CV_8UC3 */
+    protected Mat mRgbaDst; /* CV_8UC4 */
 
-    private Scalar mLowerBlack, mUpperBlack;
+    protected Scalar mLowerBlack, mUpperBlack;
 
     public GraphFilter(int rows, int cols) {
         mGray = new Mat(rows, cols, CvType.CV_8UC1);
         mMatMaskBlack = new Mat(rows, cols, CvType.CV_8UC1);
+        mMatMaskBlackInv = new Mat(rows, cols, CvType.CV_8UC1);
 
         mHsv = new Mat(rows, cols, CvType.CV_8UC3);
         mRgb = new Mat(rows, cols, CvType.CV_8UC3);
@@ -110,10 +113,10 @@ class GraphFilter implements Filter {
         Core.inRange(mHsv, mLowerBlack, mUpperBlack, mMatMaskBlack);
 
         /* invert it */
-        Core.bitwise_not(mMatMaskBlack, mMatMaskBlack);
+        Core.bitwise_not(mMatMaskBlack, mMatMaskBlackInv);
 
         /* convert back to colorspace expected */
-        Imgproc.cvtColor(mMatMaskBlack, mRgbaDst, Imgproc.COLOR_GRAY2RGBA);
+        Imgproc.cvtColor(mMatMaskBlackInv, mRgbaDst, Imgproc.COLOR_GRAY2RGBA);
 
         return mRgbaDst;
     }
