@@ -135,7 +135,7 @@ class GraphFilter implements Filter {
         mRgbaDst = new Mat(rows, cols, CvType.CV_8UC4);
 
         mLowerBlack = new Scalar(0, 0, 0);
-        mUpperBlack = new Scalar(255, 255, 100);
+        mUpperBlack = new Scalar(255, 255, 50);
 
     }
 
