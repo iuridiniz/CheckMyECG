@@ -3,6 +3,7 @@ package com.iuridiniz.checkmyecg;
 import java.util.List;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -34,7 +35,7 @@ import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 
 
-public class ShowEkg extends ActionBarActivity {
+public class ShowEkgActivity extends ActionBarActivity {
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -53,9 +54,9 @@ public class ShowEkg extends ActionBarActivity {
 
 
     public static final String EXTRA_PHOTO_URI =
-            "com.iuridiniz.checkmyecg.ShowEkg.extra.PHOTO_URI";
+            "com.iuridiniz.checkmyecg.ShowEkgActivity.extra.PHOTO_URI";
     public static final String EXTRA_PHOTO_DATA_PATH =
-            "com.iuridiniz.checkmyecg.ShowEkg.extra.PHOTO_DATA_PATH";
+            "com.iuridiniz.checkmyecg.ShowEkgActivity.extra.PHOTO_DATA_PATH";
 
     public static final String TAG = "EkgShow";
     private boolean mOpenCvLoaded = false;
@@ -234,7 +235,21 @@ public class ShowEkg extends ActionBarActivity {
         }
 
         private void takePhoto() {
+            Activity activity = (Activity) mImageContent.getContext();
+            TakePhoto takePhoto = TakePhoto.invoke(activity, mImageRoi);
+            if (takePhoto.hasError()) {
+                activity.finish();
+                Log.e(TAG, takePhoto.getErrorString(), takePhoto.getException());
+                return;
+            }
+            Uri uri = takePhoto.getUri();
+            String photoPath = takePhoto.getPhotoPath();
 
+            /* Open the photo on result */
+//            final Intent intent = new Intent(activity, ResultEkgActivity.class);
+//            intent.putExtra(ResultEkgActivity.EXTRA_PHOTO_URI, uri);
+//            intent.putExtra(ResultEkgActivity.EXTRA_PHOTO_DATA_PATH, photoPath);
+//            startActivity(intent);
         }
     }
 
