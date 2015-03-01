@@ -244,10 +244,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private boolean mOpenCvLoaded = false;
     private CameraBridgeViewBase mPreview;
 
-    private Filter mGradeFilter;
-    private Filter mGraphFilter;
-    private Filter mNormalizeFilter;
-    private Filter mContrastFilter;
+    private GraphFilter2 mGraphFilter2;
+    private ContrastFilter mContrastFilter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -327,9 +325,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     @Override
     public void onCameraViewStarted(int width, int height) {
-        mGradeFilter = new GradeFilter(height, width);
-        mGraphFilter = new GraphFilter(height, width);
-        mNormalizeFilter = new NormalizerFilter(height, width, 100, 200);
+        mGraphFilter2 = new GraphFilter2(height, width);
         mContrastFilter = new ContrastFilter(height, width, 100, 140);
     }
 
@@ -345,21 +341,14 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
         src = inputFrame.rgba();
 
-        Mat grade = mGradeFilter.apply(src);
-        Mat graph = mGraphFilter.apply(src);
-
         Mat srcNormalized = mContrastFilter.apply(src);
-        Mat gradeNormalized = mGradeFilter.apply(srcNormalized);
-        Mat graphNormalized = mGraphFilter.apply(srcNormalized);
+        Mat graph = mGraphFilter2.apply(srcNormalized);
 
-        topLeft = grade;
-        bottomLeft = gradeNormalized;
-        topRight = graph;
-        bottomRight = graphNormalized;
+        topLeft = src;
 
-        drawMini(src, topLeft, bottomLeft, topRight, bottomRight);
+        drawMini(graph, topLeft, bottomLeft, topRight, bottomRight);
 
-        return src;
+        return graph;
     }
 
     private void drawMini(Mat dst, Mat topLeft, Mat bottomLeft, Mat topRight, Mat bottomRight) {
