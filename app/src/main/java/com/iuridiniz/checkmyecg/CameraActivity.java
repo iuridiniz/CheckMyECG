@@ -2,6 +2,7 @@ package com.iuridiniz.checkmyecg;
 
 import android.app.Activity;
 import android.content.ContentValues;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -152,7 +153,11 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             return;
         }
 
-        finish();
+        /* Open the photo */
+        final Intent intent = new Intent(this, ShowEkg.class);
+        intent.putExtra(ShowEkg.EXTRA_PHOTO_URI, uri);
+        intent.putExtra(ShowEkg.EXTRA_PHOTO_DATA_PATH, photoPath);
+        startActivity(intent);
     }
 
     private void createCameraPreview() {
