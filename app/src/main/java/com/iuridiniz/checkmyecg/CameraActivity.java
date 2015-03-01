@@ -133,8 +133,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         int dstHeight = dst.rows();
         int dstWidth = dst.cols();
 
-        int dstRoiHeight = dstHeight / 3;
-        int dstRoiWidth = dstWidth / 3;
+        int dstRoiHeight = dstHeight / 4;
+        int dstRoiWidth = dstWidth / 4;
 
         Mat dstRoi;
 
