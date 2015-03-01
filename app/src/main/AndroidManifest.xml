@@ -26,6 +26,11 @@
             android:name=".CameraActivity"
             android:label="@string/title_activity_camera"
             android:screenOrientation="landscape" />
+        <activity
+            android:name=".ShowEkg"
+            android:label="@string/title_activity_show_ekg"
+            android:screenOrientation="landscape" >
+        </activity>
     </application>
 
 </manifest>

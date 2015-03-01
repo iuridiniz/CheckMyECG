@@ -7,4 +7,7 @@
     <string name="start">Start</string>
     <string name="text_about">This application tries to evaluate EKG\'s.\nIt was developed using resources from Brazilian Ministério das Comunicações</string>
     <string name="title_activity_camera" translatable="false">Camera</string>
+    <string name="title_activity_show_ekg" translatable="false">ShowEkg</string>
+    <string name="select_button">This is an EKG!</string>
+    <string name="select_ekg_instructions">Swipe the screen with your fingers and select an EKG</string>
 </resources>

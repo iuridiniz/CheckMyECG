@@ -4,4 +4,7 @@
     <string name="instructions">Por favor, ponga el ECG en una superficie plana antes de inicio.</string>
     <string name="start">Iniciar</string>
     <string name="text_about">Esta aplicación trata de evaluar ECG\'s.\nFue desarrollado con fondos del Ministério das Comunicações de Brasil</string>
+    <string name="select_button">¡Este es un ECG!</string>
+    <string name="title_activity_camera" translatable="false">Cámara</string>
+    <string name="select_ekg_instructions">Deslice la pantalla con los dedos y seleccione un electrocardiograma</string>
 </resources>
