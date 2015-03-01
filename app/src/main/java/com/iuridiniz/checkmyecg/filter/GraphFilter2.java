@@ -52,7 +52,10 @@ public class GraphFilter2 extends GraphFilter {
     public List<MatOfPoint> getContours(int max, boolean sortIt) {
         if (max < 0) {
             max = mContours.size();
+        } else if (max > mContours.size()) {
+            max = mContours.size();
         }
+
         ArrayList<MatOfPoint> ret = new ArrayList<MatOfPoint>(max);
 
         if (sortIt && mNeedSort) {
