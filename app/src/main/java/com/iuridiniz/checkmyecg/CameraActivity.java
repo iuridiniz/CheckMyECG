@@ -1,10 +1,16 @@
 package com.iuridiniz.checkmyecg;
 
 import android.app.Activity;
+import android.content.ContentValues;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.ImageButton;
 
 import com.iuridiniz.checkmyecg.filter.ContrastFilter;
 import com.iuridiniz.checkmyecg.filter.GraphFilter2;
@@ -13,8 +19,10 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
+import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.File;
 
 public class CameraActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -24,11 +32,27 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     private GraphFilter2 mGraphFilter2;
     private ContrastFilter mContrastFilter;
+    private ImageButton mCaptureButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
+
+        mCaptureButton = (ImageButton) findViewById(R.id.capture_button);
+        mCaptureButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "Capture Button clicked");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        takePhoto();
+                    }
+                });
+            }
+        });
+
         /* Keep the screen on */
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
@@ -64,6 +88,71 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             }
         });
 
+    }
+
+    private void takePhoto() {
+        /* save current image */
+        Mat rgba = mContrastFilter.getResult();
+        Mat bgra = new Mat();
+
+        if (rgba == null) {
+            Log.e(TAG, "There's no photo");
+            finish();
+            return;
+        }
+        /* Determine the path and metadata for the photo. */
+        final long currentTimeMillis = System.currentTimeMillis();
+        final String appName = getString(R.string.app_name);
+        final String galleryPath =
+                Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_PICTURES).toString();
+        final String albumPath = galleryPath + "/" + appName;
+        final String photoPath = albumPath + "/"
+                + currentTimeMillis + ".png";
+        final ContentValues values = new ContentValues();
+        values.put(MediaStore.MediaColumns.DATA, photoPath);
+        values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+        values.put(MediaStore.Images.Media.TITLE, appName);
+        values.put(MediaStore.Images.Media.DESCRIPTION, appName);
+        values.put(MediaStore.Images.Media.DATE_TAKEN, currentTimeMillis);
+
+        /* Ensure that the album directory exists. */
+        File album = new File(albumPath);
+        if (!album.isDirectory() && !album.mkdirs()) {
+            Log.e(TAG, String.format("Failed to create album directory at '%s'",
+                    albumPath));
+            finish();
+            return;
+        }
+
+        /* Try to create the photo. */
+        Imgproc.cvtColor(rgba, bgra, Imgproc.COLOR_RGBA2BGRA);
+        if (!Highgui.imwrite(photoPath, bgra)) {
+            Log.e(TAG, String.format("Failed to save photo to '%s'", photoPath));
+            finish();
+            return;
+        }
+        Log.d(TAG, String.format("Photo saved successfully to '%s", photoPath));
+
+        /* Try to insert the photo into the MediaStore. */
+        Uri uri;
+        try {
+            uri = getContentResolver().insert(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+        } catch (final Exception e) {
+            Log.e(TAG, "Failed to insert photo into MediaStore", e);
+
+            // Since the insertion failed, delete the photo.
+            File photo = new File(photoPath);
+            if (!photo.delete()) {
+                Log.e(TAG, "Failed to delete non-inserted photo");
+            }
+
+            finish();
+            return;
+        }
+
+        finish();
     }
 
     private void createCameraPreview() {
