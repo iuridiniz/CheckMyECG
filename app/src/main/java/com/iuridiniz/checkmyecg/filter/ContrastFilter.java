@@ -46,7 +46,8 @@ public class ContrastFilter implements Filter {
 
     public Mat getResult() {
         if (mHasResult)
-            return mRgbaDst.clone();
+            return mRgbaDst;
+        return null;
     }
 
     public Mat getSrc() {
