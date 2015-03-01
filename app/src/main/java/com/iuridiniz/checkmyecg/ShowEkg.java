@@ -2,6 +2,7 @@ package com.iuridiniz.checkmyecg;
 
 import java.util.List;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -17,6 +18,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 
 import com.iuridiniz.checkmyecg.filter.GraphFilter2;
@@ -177,7 +179,9 @@ public class ShowEkg extends ActionBarActivity {
         private static final String ARG_SECTION_NUMBER = "section_number";
         private MatOfPoint mContour;
         private Mat mImage;
+        private Mat mImageRoi;
         private ImageView mImageContent;
+        private Button mSelectButton;
 
         /**
          * Returns a new instance of this fragment for the given section
@@ -198,20 +202,39 @@ public class ShowEkg extends ActionBarActivity {
         }
 
         @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
+        public View onCreateView(LayoutInflater inflater, final ViewGroup container,
                                  Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_show_ekg, container, false);
+            final View rootView = inflater.inflate(R.layout.fragment_show_ekg, container, false);
             mImageContent = (ImageView) rootView.findViewById(R.id.image_content);
+            mSelectButton = (Button) rootView.findViewById(R.id.select_button);
 
             /* show image */
             Rect r = Imgproc.boundingRect(mContour);
             Bitmap bmp = Bitmap.createBitmap(r.width, r.height, Bitmap.Config.ARGB_8888);
-            Mat roi = mImage.submat(r.y, r.y + r.height, r.x, r.x + r.width);
-            Utils.matToBitmap(roi, bmp);
+            mImageRoi = mImage.submat(r.y, r.y + r.height, r.x, r.x + r.width);
+            Utils.matToBitmap(mImageRoi, bmp);
 
             mImageContent.setImageBitmap(bmp);
 
+            /* setup button */
+            mSelectButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Log.d(TAG, "Select Button clicked");
+                    ((Activity)rootView.getContext()).runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            takePhoto();
+                        }
+                    });
+                }
+            });
+
             return rootView;
+        }
+
+        private void takePhoto() {
+
         }
     }
 
