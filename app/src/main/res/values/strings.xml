@@ -6,8 +6,11 @@
     <string name="instructions">Please, put the EKG in a plane surface before start.</string>
     <string name="start">Start</string>
     <string name="text_about">This application tries to evaluate EKG\'s.\nIt was developed using resources from Brazilian Ministério das Comunicações</string>
-    <string name="title_activity_camera" translatable="false">Camera</string>
-    <string name="title_activity_show_ekg" translatable="false">ShowEkg</string>
+    <string name="title_activity_camera">Camera</string>
+    <string name="title_activity_show_ekg">Select EKG</string>
     <string name="select_button">This is an EKG!</string>
     <string name="select_ekg_instructions">Swipe the screen with your fingers and select an EKG</string>
+    <string name="title_activity_result_ekg">EKG\'s result</string>
+    <string name="action_share">Share</string>
+    <string name="text_ekg_fail" >Unable to determine anything about this EKG</string>
 </resources>

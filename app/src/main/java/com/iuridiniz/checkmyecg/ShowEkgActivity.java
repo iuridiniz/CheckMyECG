@@ -246,10 +246,10 @@ public class ShowEkgActivity extends ActionBarActivity {
             String photoPath = takePhoto.getPhotoPath();
 
             /* Open the photo on result */
-//            final Intent intent = new Intent(activity, ResultEkgActivity.class);
-//            intent.putExtra(ResultEkgActivity.EXTRA_PHOTO_URI, uri);
-//            intent.putExtra(ResultEkgActivity.EXTRA_PHOTO_DATA_PATH, photoPath);
-//            startActivity(intent);
+            final Intent intent = new Intent(activity, ResultEkgActivity.class);
+            intent.putExtra(ResultEkgActivity.EXTRA_PHOTO_URI, uri);
+            intent.putExtra(ResultEkgActivity.EXTRA_PHOTO_DATA_PATH, photoPath);
+            startActivity(intent);
         }
     }
 

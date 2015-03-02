@@ -7,4 +7,8 @@
     <string name="select_button">¡Este es un ECG!</string>
     <string name="title_activity_camera" translatable="false">Cámara</string>
     <string name="select_ekg_instructions">Deslice la pantalla con los dedos y seleccione un electrocardiograma</string>
+    <string name="action_share">Compartir</string>
+    <string name="title_activity_result_ekg">El resultado de ECG </string>
+    <string name="title_activity_show_ekg">Seleccione ECG</string>
+    <string name="text_ekg_fail" >No se puede determinar nada sobre este EKG</string>
 </resources>

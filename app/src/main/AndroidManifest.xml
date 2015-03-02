@@ -31,6 +31,15 @@
             android:label="@string/title_activity_show_ekg"
             android:screenOrientation="landscape" >
         </activity>
+        <activity
+            android:name=".ResultEkgActivity"
+            android:label="@string/title_activity_result_ekg"
+            android:parentActivityName=".MainActivity"
+            android:screenOrientation="landscape" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.iuridiniz.checkmyecg.MainActivity" />
+        </activity>
     </application>
 
 </manifest>
