@@ -1,0 +1,11 @@
+from: http://developer.android.com/design/style/iconography.html
+
+2:3:4:6:8 scaling ratio
+[0.25, 0.375, 0.5, 0.75, 1.0]
+
+mdpi:    125x125 (0.25)
+hdpi:    188x188 (0.375)
+xhdpi:   250x250 (0.5)
+xxhdpi:  375x275 (0.75)
+xxxhdpi: 500x500 (1.0)
+
