@@ -12,10 +12,11 @@
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:text="@string/instructions"
         android:id="@+id/text_view_instructions"
-        android:layout_centerVertical="true"
-        android:layout_centerHorizontal="true"
         android:textAlignment="center"
-        android:gravity="center" />
+        android:gravity="center"
+        android:layout_centerVertical="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
 
     <Button
         style="?android:attr/buttonStyleSmall"
@@ -25,5 +26,23 @@
         android:id="@+id/button_start"
         android:layout_below="@+id/text_view_instructions"
         android:layout_centerHorizontal="true" />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/imageView"
+        android:src="@drawable/mc"
+        android:layout_above="@+id/imageView2"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="5dp" />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/imageView2"
+        android:src="@drawable/inova"
+        android:layout_above="@+id/text_view_instructions"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="5dp" />
 
 </RelativeLayout>
