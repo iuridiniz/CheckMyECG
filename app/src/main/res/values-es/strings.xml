@@ -11,4 +11,5 @@
     <string name="title_activity_result_ekg">El resultado de ECG </string>
     <string name="title_activity_show_ekg">Seleccione ECG</string>
     <string name="text_ekg_fail" >No se puede determinar nada sobre este EKG</string>
+    <string name="pick_derivation">Seleccione la derivación</string>
 </resources>

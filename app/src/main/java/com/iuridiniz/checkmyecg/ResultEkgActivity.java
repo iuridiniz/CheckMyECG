@@ -1,5 +1,8 @@
 package com.iuridiniz.checkmyecg;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.support.v4.view.MenuItemCompat;
@@ -78,8 +81,35 @@ public class ResultEkgActivity extends ActionBarActivity {
     }
 
     private void onReady(Bundle savedInstanceState) {
-        mImageContent.setImageURI(mUri);
-        mTextContent.setText(R.string.text_ekg_fail);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(R.string.pick_derivation)
+                .setItems(R.array.derivations_array, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, final int which) {
+                        // The 'which' argument contains the index position
+                        // of the selected item
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                ResultEkgActivity.this.compareWithDerivation(which);
+                            }
+                        });
+                    }
+                })
+                .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                    @Override
+                    public void onCancel(DialogInterface dialog) {
+                        ResultEkgActivity.this.finish();
+                    }
+                });
+        Dialog d = builder.create();
+        d.show();
+    }
+
+    private void compareWithDerivation(int derivationIndex) {
+        String[] derivations = getResources().getStringArray(R.array.derivations_array);
+        String derivation = derivations[derivationIndex];
+        Log.i(TAG, String.format("Comparing the ekg derivation '%s' with pathological base", derivation));
     }
 
     @Override
