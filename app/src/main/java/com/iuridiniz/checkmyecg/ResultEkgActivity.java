@@ -42,6 +42,8 @@ public class ResultEkgActivity extends ActionBarActivity {
         mImageContent = (ImageView) findViewById(R.id.result_image);
         mTextContent = (TextView) findViewById(R.id.result_text);
 
+        mTextContent.setText("");
+
         /* init openCV */
         if (OpenCVLoader.initDebug()) {
             Log.i(TAG, "OpenCV loaded successfully (static initialization)");
