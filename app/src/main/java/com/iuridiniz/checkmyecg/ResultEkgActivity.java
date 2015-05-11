@@ -2,8 +2,14 @@ package com.iuridiniz.checkmyecg;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.SQLException;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBarActivity;
@@ -36,7 +42,12 @@ import org.opencv.features2d.KeyPoint;
 import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -134,6 +145,50 @@ public class ResultEkgActivity extends ActionBarActivity {
         String[] derivations = getResources().getStringArray(R.array.derivations_array);
         String derivation = derivations[derivationIndex];
         Log.i(TAG, String.format("Comparing the ekg derivation '%s' with pathological base", derivation));
+        //mImageContent.setImageURI(mImageUri);
+        //mTextContent.setText(R.string.text_ekg_fail);
+
+        PathologicalDescriptor query = new PathologicalDescriptor();
+        query.describe(mImageDataPath);
+
+        //PathologicalDescriptor base = new PathologicalDescriptor("Normal");
+        //try {
+        //    base.describe(Utils.loadResource(this, R.drawable.test, Highgui.CV_LOAD_IMAGE_GRAYSCALE));
+        //} catch (IOException e) {
+        //    e.printStackTrace();
+        //    finish();
+        //}
+        PathologicalMatcher matcher = null;
+        {
+            //DataBaseHelper db = new DataBaseHelper(this);
+            DbAdapter db = new DbAdapter(this);
+            db.initializeDatabase();
+            db.open();
+            matcher = db.getMatcher(derivation);
+            db.close();
+        } //catch (IOException e) {
+            //e.printStackTrace();
+            //Log.d(TAG, "Error while opening database", e);
+        //}
+
+        //matcher.append(base);
+
+        List<PathologicalResult> search = matcher.search(query);
+        for (PathologicalResult r: search) {
+            Log.d(TAG, String.format("%s: %f", r.getText(), r.getScore()));
+        }
+
+        mImageContent.setImageURI(mImageUri);
+        if (search.size() < 1) {
+            mTextContent.setText(R.string.text_ekg_fail);
+        } else {
+            PathologicalResult best_result = search.get(0);
+            if (best_result.getScore() < 0.5) {
+                mTextContent.setText(R.string.text_ekg_fail);
+            } else {
+                mTextContent.setText(best_result.getText());
+            }
+        }
     }
 
     @Override
@@ -326,7 +381,7 @@ class PathologicalMatcher {
             score = score * (1 - (0.05 * (matchs<10?matchs:10)));
 
             /* mean elevated */
-            score = score * (mean<10?1.0:0.5);
+            score = score * (mean < 10 ? 1.0 : 0.5);
         }
         Log.d(ResultEkgActivity.TAG,
                 String.format("Size: %d, Matchs: %d, close: %d, far: %d, Mean %f, close: %f, score: %f",
@@ -444,3 +499,313 @@ class PathologicalMatcher {
     }
 }
 
+/* http://stackoverflow.com/questions/2605555/android-accessing-assets-folder-sqlite-database-file-with-sqlite-extension# */
+/* http://www.xatik.com/2012/03/19/android-preloaded-database/ */
+class DataBaseHelper extends SQLiteOpenHelper {
+    private Context mycontext;
+
+    private static String DB_NAME = "pathological.sqlite";//the extension may be .sqlite or .db
+    public SQLiteDatabase myDataBase;
+    private String DB_PATH;
+
+    public DataBaseHelper(Context context) throws IOException {
+        super(context,DB_NAME,null,1);
+        this.mycontext=context;
+        DB_PATH = mycontext.getApplicationInfo().dataDir +"/databases/";
+
+        boolean dbexist = checkdatabase();
+        if (dbexist) {
+            //System.out.println("Database exists");
+            opendatabase();
+        } else {
+            System.out.println("Database doesn't exist");
+            createdatabase();
+        }
+    }
+
+    public void createdatabase() throws IOException {
+        boolean dbexist = checkdatabase();
+        if(dbexist) {
+            //System.out.println(" Database exists.");
+        } else {
+            this.getReadableDatabase();
+            try {
+                copydatabase();
+            } catch(IOException e) {
+                throw new Error("Error copying database");
+            }
+        }
+    }
+
+    private boolean checkdatabase() {
+        //SQLiteDatabase checkdb = null;
+        boolean checkdb = false;
+        try {
+            String myPath = DB_PATH + DB_NAME;
+            File dbfile = new File(myPath);
+            //checkdb = SQLiteDatabase.openDatabase(myPath,null,SQLiteDatabase.OPEN_READWRITE);
+            checkdb = dbfile.exists();
+        } catch(SQLiteException e) {
+            System.out.println("Database doesn't exist");
+        }
+        return checkdb;
+    }
+
+    private void copydatabase() throws IOException {
+        //Open your local db as the input stream
+        InputStream myinput = mycontext.getAssets().open(DB_NAME);
+
+        // Path to the just created empty db
+        String outfilename = DB_PATH + DB_NAME;
+
+        //Open the empty db as the output stream
+        OutputStream myoutput = new FileOutputStream(outfilename);
+
+        // transfer byte to inputfile to outputfile
+        byte[] buffer = new byte[1024];
+        int length;
+        while ((length = myinput.read(buffer))>0) {
+            myoutput.write(buffer,0,length);
+        }
+
+        //Close the streams
+        myoutput.flush();
+        myoutput.close();
+        myinput.close();
+    }
+
+    public void opendatabase() throws SQLException {
+        //Open the database
+        String mypath = DB_PATH + DB_NAME;
+        myDataBase = SQLiteDatabase.openDatabase(mypath, null, SQLiteDatabase.OPEN_READWRITE);
+    }
+
+    public PathologicalMatcher getMatcher(String derivation) {
+        PathologicalMatcher matcher = new PathologicalMatcher();
+
+        /* support locales */
+        String lang = mycontext.getResources().getConfiguration().locale.getLanguage();
+        String column_desc = "description";
+        if (lang.compareTo("pt") == 0) {
+            column_desc = "description_pt";
+        } else if (lang.compareTo("es") == 0) {
+            column_desc = "description_es";
+        }
+        Cursor c = myDataBase.rawQuery("SELECT ?,? FROM pathology WHERE derivation = ?",
+                new String[] { column_desc, "image", derivation });
+        if (c == null) {
+            return matcher;
+        }
+        c.moveToFirst();
+        do {
+            String desc = c.getString(0);
+            byte[] blob = c.getBlob(1);
+            /* save to file */
+
+            try
+            {
+                File outputDir = mycontext.getCacheDir(); // context being the Activity pointer
+                File blobFile = File.createTempFile("temp", "png", outputDir);
+
+                FileOutputStream outStream  = new FileOutputStream(blobFile);
+                InputStream inStream = new ByteArrayInputStream(blob);
+
+                int     length  = -1;
+                int     size    = blob.length;
+                byte[]  buffer  = new byte[size];
+
+                while ((length = inStream.read(buffer)) != -1)
+                {
+                    outStream.write(buffer, 0, length);
+                    outStream.flush();
+                }
+
+                inStream.close();
+                outStream.close();
+
+                PathologicalDescriptor patho = new PathologicalDescriptor(desc);
+                patho.describe(blobFile.getAbsolutePath());
+
+                matcher.append(patho);
+            }
+            catch (Exception e)
+            {
+                Log.d(ResultEkgActivity.TAG, "Error while opening database", e);
+            }
+            finally
+            {
+            }
+        } while (c.moveToNext());
+
+
+        return matcher;
+    }
+
+    public synchronized void close() {
+        if(myDataBase != null) {
+            myDataBase.close();
+        }
+        super.close();
+    }
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+
+    }
+
+}
+
+
+class DbAdapter extends SQLiteOpenHelper {
+
+    private String DATABASE_PATH = "/data/data/YOUR_PACKAGE/";
+    public static final String DATABASE_NAME = "pathological.db";
+
+    private SQLiteDatabase mDb;
+
+    private final Context mContext;
+
+    private boolean mCreateDatabase = false;
+    private boolean mUpgradeDatabase = false;
+
+    /**
+     * Constructor
+     * Takes and keeps a reference of the passed context in order to access
+     * the application's assets and resources
+     * @param context
+     */
+    public DbAdapter(Context context) {
+        super(context, DATABASE_NAME, null, 1);
+
+        mContext = context;
+    }
+
+    public void initializeDatabase() {
+        DATABASE_PATH = mContext.getApplicationInfo().dataDir +"/databases/";
+        getWritableDatabase();
+
+        if(mUpgradeDatabase) {
+            mContext.deleteDatabase(DATABASE_NAME);
+        }
+
+        if(mCreateDatabase || mUpgradeDatabase) {
+            try {
+                copyDatabase();
+            } catch (IOException e) {
+                throw new Error("Error copying database");
+            }
+        }
+    }
+
+    private void copyDatabase() throws IOException {
+        close();
+
+        InputStream input = mContext.getAssets().open(DATABASE_NAME);
+
+        String outFileName = DATABASE_PATH + DATABASE_NAME;
+
+        OutputStream output = new FileOutputStream(outFileName);
+
+        // Transfer bytes from the input file to the output file
+        byte[] buffer = new byte[1024];
+        int length;
+        while ((length = input.read(buffer)) > 0) {
+            output.write(buffer, 0, length);
+        }
+
+        output.flush();
+        output.close();
+        input.close();
+
+        getWritableDatabase().close();
+    }
+
+    public DbAdapter open() throws SQLException {
+        mDb = getReadableDatabase();
+        return this;
+    }
+
+    public void CleanUp() {
+        mDb.close();
+    }
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+        mCreateDatabase = true;
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        mUpgradeDatabase = true;
+    }
+
+    /**
+     * Public helper methods
+     */
+
+    public PathologicalMatcher getMatcher(String derivation) {
+        PathologicalMatcher matcher = new PathologicalMatcher();
+
+        /* support locales */
+        String lang = mContext.getResources().getConfiguration().locale.getLanguage();
+        String column_desc = "description";
+        if (lang.compareTo("pt") == 0) {
+            column_desc = "description_pt";
+        } else if (lang.compareTo("es") == 0) {
+            column_desc = "description_es";
+        }
+        Cursor c = mDb.rawQuery(String.format("SELECT %s,image FROM pathology WHERE derivation = ?", column_desc),
+                new String[] { derivation });
+        if (c == null) {
+            return matcher;
+        }
+
+        while (c.moveToNext()) {
+            String desc = c.getString(0);
+            byte[] blob = c.getBlob(1);
+            /* save to file */
+
+            try
+            {
+                File outputDir = mContext.getCacheDir(); // context being the Activity pointer
+                File blobFile = File.createTempFile("temp", ".png", outputDir);
+
+                FileOutputStream outStream  = new FileOutputStream(blobFile);
+                InputStream inStream = new ByteArrayInputStream(blob);
+
+                int     length  = -1;
+                int     size    = blob.length;
+                byte[]  buffer  = new byte[size];
+
+                while ((length = inStream.read(buffer)) != -1)
+                {
+                    outStream.write(buffer, 0, length);
+                    outStream.flush();
+                }
+
+                inStream.close();
+                outStream.close();
+
+                PathologicalDescriptor patho = new PathologicalDescriptor(desc);
+                patho.describe(blobFile.getAbsolutePath());
+
+                matcher.append(patho);
+            }
+            catch (Exception e)
+            {
+                Log.d(ResultEkgActivity.TAG, "Error while opening database", e);
+            }
+            finally
+            {
+            }
+        };
+
+
+        return matcher;
+    }
+}
