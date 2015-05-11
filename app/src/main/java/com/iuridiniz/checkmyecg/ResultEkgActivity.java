@@ -15,8 +15,32 @@ import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.iuridiniz.checkmyecg.filter.GraphFilter2;
+
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.calib3d.Calib3d;
+import org.opencv.core.Core;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfDMatch;
+import org.opencv.core.MatOfKeyPoint;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.Point;
+import org.opencv.features2d.DMatch;
+import org.opencv.features2d.DescriptorExtractor;
+import org.opencv.features2d.DescriptorMatcher;
+import org.opencv.features2d.FeatureDetector;
+import org.opencv.features2d.KeyPoint;
+import org.opencv.highgui.Highgui;
+import org.opencv.imgproc.Imgproc;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Vector;
 
 public class ResultEkgActivity extends ActionBarActivity {
 
@@ -24,11 +48,11 @@ public class ResultEkgActivity extends ActionBarActivity {
             "com.iuridiniz.checkmyecg.ResultEkgActivity.extra.PHOTO_URI;";
     public static final String EXTRA_PHOTO_DATA_PATH =
             "com.iuridiniz.checkmyecg.ResultEkgActivity.extra.DATA_PATH;";
-    private static final String TAG = "ResultEkg";
+    static final String TAG = "ResultEkg";
 
     private ShareActionProvider mShareActionProvider;
-    private Uri mUri;
-    private String mDataPath;
+    private Uri mImageUri;
+    private String mImageDataPath;
     private ImageView mImageContent;
     private TextView mTextContent;
     private boolean mOpenCvLoaded = false;
@@ -39,8 +63,8 @@ public class ResultEkgActivity extends ActionBarActivity {
         setContentView(R.layout.activity_result_ekg);
 
         final Intent intent = getIntent();
-        mUri = intent.getParcelableExtra(EXTRA_PHOTO_URI);
-        mDataPath = intent.getStringExtra(EXTRA_PHOTO_DATA_PATH);
+        mImageUri = intent.getParcelableExtra(EXTRA_PHOTO_URI);
+        mImageDataPath = intent.getStringExtra(EXTRA_PHOTO_DATA_PATH);
 
         mImageContent = (ImageView) findViewById(R.id.result_image);
         mTextContent = (TextView) findViewById(R.id.result_text);
@@ -139,3 +163,284 @@ public class ResultEkgActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 }
+
+class PathologicalResult implements Comparable<PathologicalResult> {
+    private Double mScore = -1.0;
+    private String mText = "";
+
+    public PathologicalResult(String text, double score) {
+        this.mText = text;
+        this.mScore = score;
+    }
+
+    @Override
+    public int compareTo(PathologicalResult another) {
+        return this.mScore.compareTo(another.mScore);
+    }
+
+    public Double getScore() {
+        return mScore;
+    }
+
+    public String getText() {
+        return mText;
+    }
+}
+
+class PathologicalDescriptor {
+
+    private final DescriptorExtractor mDescriptorExtractor;
+    private final FeatureDetector mFeatureDetector;
+    private GraphFilter2 graph = null;
+    private final String mText;
+    private MatOfKeyPoint mKeyPoints;
+
+    private Mat mDescriptors;
+
+    public PathologicalDescriptor(String text, int detectorType, int extractorType) {
+        mText = text;
+        mFeatureDetector = FeatureDetector.create(detectorType);
+        mDescriptorExtractor = DescriptorExtractor.create(extractorType);
+        mKeyPoints = new MatOfKeyPoint();
+        mDescriptors = new Mat();
+    }
+
+    public PathologicalDescriptor() {
+        this("");
+    }
+
+    public PathologicalDescriptor(String text) {
+        this(text, FeatureDetector.STAR, DescriptorExtractor.FREAK);
+    }
+
+    public PathologicalDescriptor describe(String imagePath) {
+        Mat imageGray = Highgui.imread(imagePath, Highgui.CV_LOAD_IMAGE_GRAYSCALE);
+        return describe(imageGray);
+    }
+
+    public PathologicalDescriptor describe(Mat imageGray) {
+        mFeatureDetector.detect(imageGray, mKeyPoints);
+        mDescriptorExtractor.compute(imageGray, mKeyPoints, mDescriptors);
+
+        Mat rgba = new Mat();
+        Imgproc.cvtColor(imageGray, rgba, Imgproc.COLOR_GRAY2RGBA);
+        graph = new GraphFilter2(rgba.rows(), rgba.cols());
+        graph.apply(rgba);
+
+        return this;
+    }
+
+    public List<MatOfPoint> getContours(Integer max, Boolean sortIt) {
+        if (graph == null) {
+            return null;
+        }
+        if (sortIt == null) {
+            return graph.getContours(max);
+        }
+        if (max == null) {
+            return graph.getContours();
+        }
+        return graph.getContours(max, sortIt);
+    }
+
+    public List<MatOfPoint> getContours(int max) {
+        return getContours(max, null);
+    }
+
+    public List<MatOfPoint> getContours() {
+        return getContours(null, null);
+    }
+
+    public Mat getDescriptors() {
+        return mDescriptors;
+    }
+
+    public MatOfKeyPoint getKeyPoints() {
+        return mKeyPoints;
+    }
+
+    public String getText() {
+        return mText;
+    }
+}
+
+class PathologicalMatcher {
+    private Vector<PathologicalDescriptor> mBase;
+    public PathologicalMatcher() {
+        mBase = new Vector<PathologicalDescriptor>();
+    }
+
+    public void append(PathologicalDescriptor b) {
+        mBase.add(b);
+    }
+
+    private double match(PathologicalDescriptor query, PathologicalDescriptor base) {
+
+        return match(query.getKeyPoints().toList(), query.getDescriptors(),
+                base.getKeyPoints().toList(), base.getDescriptors(), 0.7, 50);
+    }
+
+    private double match2(PathologicalDescriptor query, PathologicalDescriptor base) {
+
+        return match2(query.getKeyPoints().toList(), query.getDescriptors(),
+                base.getKeyPoints().toList(), base.getDescriptors());
+    }
+
+    private double matchContours(PathologicalDescriptor query, PathologicalDescriptor base) {
+        List<MatOfPoint> queryContours = query.getContours(10);
+        List<MatOfPoint> baseContours = base.getContours(10);
+        int matchs_close = 0;
+        int matchs = 0;
+        int matchs_far = 0;
+        double sum = 0.0;
+        double sum_close = 0.0;
+        int size = 0;
+        for (int i = 0; i < queryContours.size(); i++) {
+            for (int j = 0; j < baseContours.size(); j++) {
+                double score = Imgproc.matchShapes(queryContours.get(i), baseContours.get(j),
+                        Imgproc.CV_CONTOURS_MATCH_I1, 0);
+                //Log.d(ResultEkgActivity.TAG, String.format("[%d,%d]Score: %f", i, j, score));
+                if (score <= 0.0) {
+                    matchs++;
+                } else if (score > 0.0 && score < 1.0) {
+                    matchs_close++;
+                    sum_close += score;
+                } else if (score > 10.0) {
+                    matchs_far++;
+                }
+                size++;
+                sum += score;
+
+            }
+        }
+        double mean = -1.0;
+        double score = -1.0;
+        double mean_close = -1.0;
+        if (size > 0) {
+            mean = sum / size;
+            score = ((double)matchs_close) / size;
+            if (matchs_close > 0) {
+                mean_close = sum_close / matchs_close;
+            }
+            /* has equals? impossible: penalty 5% for each, max: 50%*/
+            score = score * (1 - (0.05 * (matchs<10?matchs:10)));
+
+            /* mean elevated */
+            score = score * (mean<10?1.0:0.5);
+        }
+        Log.d(ResultEkgActivity.TAG,
+                String.format("Size: %d, Matchs: %d, close: %d, far: %d, Mean %f, close: %f, score: %f",
+                        size, matchs, matchs_close, matchs_far, mean, mean_close, score));
+
+        return score;
+    }
+
+    public List<PathologicalResult> search(PathologicalDescriptor query) {
+        Vector<PathologicalResult> result = new Vector<PathologicalResult>();
+        for (PathologicalDescriptor pathology: mBase) {
+            double score = matchContours(query, pathology);
+            result.add(new PathologicalResult(pathology.getText(), score));
+        }
+        Collections.sort(result);
+        Collections.reverse(result);
+        return result;
+    }
+
+    private double match2(List<KeyPoint> keyPointsQuery, Mat descriptionsQuery,
+                          List<KeyPoint> keyPointsBase, Mat descriptionsBase) {
+        DescriptorMatcher descriptorMatcher =
+                DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
+        MatOfDMatch matches = new MatOfDMatch();
+        descriptorMatcher.match(descriptionsQuery, descriptionsBase, matches);
+
+        List<DMatch> matchesList = matches.toList();
+
+        if (matchesList.size() < 4) {
+            return -1.0;
+        }
+
+        double maxDist = 0.0;
+        double minDist = Double.MAX_VALUE;
+
+        /* calculate distances */
+        for (DMatch match: matchesList) {
+            double dist = match.distance;
+            if (dist < minDist) {
+                minDist = dist;
+            }
+            if (dist > maxDist) {
+                maxDist = dist;
+            }
+        }
+
+        if (minDist > 25.0) {
+            return -1.0;
+        }
+
+        /* good points */
+        ArrayList<Point> goodQueryPointsList = new ArrayList<Point>();
+        ArrayList<Point> goodBasePointsList = new ArrayList<Point>();
+
+        double maxGoodMatch = 1.75 * minDist;
+
+        for (DMatch match: matchesList) {
+            if (match.distance < maxGoodMatch) {
+                goodQueryPointsList.add(keyPointsQuery.get(match.queryIdx).pt);
+                goodBasePointsList.add(keyPointsBase.get(match.trainIdx).pt);
+            }
+        }
+
+        if (goodQueryPointsList.size() < 4 || goodBasePointsList.size() < 4) {
+            return -1.0;
+        }
+
+        MatOfPoint2f queryPoints = new MatOfPoint2f();
+        queryPoints.fromList(goodQueryPointsList);
+
+        MatOfPoint2f basePoints = new MatOfPoint2f();
+        basePoints.fromList(goodBasePointsList);
+
+        Mat status = new Mat();
+        Calib3d.findHomography(basePoints, queryPoints, Calib3d.RANSAC, 4.0, status);
+
+        return Core.sumElems(status).val[0]/status.total();
+    }
+
+    private double match(List<KeyPoint> keyPointsQuery, Mat descriptionsQuery,
+                         List<KeyPoint> keyPointsBase, Mat descriptionsBase,
+                         double ratio, int minMatches) {
+        DescriptorMatcher descriptorMatcher =
+                DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
+
+        Vector<MatOfDMatch> rawMatches = new Vector<MatOfDMatch>();
+        Vector<Point> matchesQueryPoints = new Vector<Point>();
+        Vector<Point> matchesTrainPoints = new Vector<Point>();
+
+        //descriptorMatcher.knnMatch(descriptionsBase, descriptionsQuery, rawMatches, 2);
+
+        for (MatOfDMatch m: rawMatches) {
+            List<DMatch> l = m.toList();
+            if (l.size() == 2 && l.get(0).distance < l.get(1).distance * ratio) {
+                // ptsA
+                matchesQueryPoints.add(keyPointsQuery.get(l.get(0).trainIdx).pt);
+                // ptsB
+                matchesTrainPoints.add(keyPointsBase.get(l.get(0).queryIdx).pt);
+            }
+        }
+
+        if (matchesQueryPoints.size() > minMatches) {
+            MatOfPoint2f ptsQuery = new MatOfPoint2f();
+            ptsQuery.fromList(matchesQueryPoints);
+
+            MatOfPoint2f ptsTrain = new MatOfPoint2f();
+            ptsQuery.fromList(matchesTrainPoints);
+
+            Mat status = new Mat();
+            Calib3d.findHomography(ptsQuery, ptsTrain, Calib3d.RANSAC, 4.0, status);
+
+            return Core.sumElems(status).val[0]/status.total();
+        }
+        return -1.0;
+    }
+}
+
