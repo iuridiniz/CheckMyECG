@@ -522,6 +522,7 @@ class DbAdapter extends SQLiteOpenHelper {
     public DbAdapter(Context context) {
         super(context, DATABASE_NAME, null, 1);
 
+        mUpgradeDatabase = true; /* always delete */
         mContext = context;
     }
 
