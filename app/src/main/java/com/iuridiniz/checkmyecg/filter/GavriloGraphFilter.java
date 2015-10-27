@@ -19,8 +19,15 @@ import java.util.Arrays;
 public class GavriloGraphFilter implements Filter {
 
     private static final String TAG = "GravriloGraphFilter";
+    public static final int DEFAULT_SLICES = 18;
+    public static final double DEFAULT_AREA_PERCENT = 0.1;
+    public static final double DEFAULT_LIGHT_ADJUST = 0.00058;
+
     protected MatOfInt mSplitFromTo;
     protected Scalar mZeroScalar;
+    protected double mAreaPercent;
+    protected double mLightAdjust;
+    protected int mSlices;
     protected MatOfInt mHistogramSize;
     protected MatOfFloat mHistogramRanges;
     protected Mat mRgb, mHsv, mHist, mKernelErode, mKernelDilate, mRgbaDst;
@@ -37,6 +44,13 @@ public class GavriloGraphFilter implements Filter {
     //protected int
 
     public GavriloGraphFilter(int rows, int cols) {
+        this(rows, cols, DEFAULT_SLICES, DEFAULT_AREA_PERCENT, DEFAULT_LIGHT_ADJUST);
+    }
+
+    public GavriloGraphFilter(int rows, int cols, int slices, double areaPercent, double lightAdjust) {
+        mSlices = slices;
+        mAreaPercent = areaPercent;
+        mLightAdjust = lightAdjust;
         mHsv = new Mat(rows, cols, CvType.CV_8UC3);
         mRgb = new Mat(rows, cols, CvType.CV_8UC3);
         mHist = new Mat(rows, cols, CvType.CV_32F);
@@ -52,8 +66,9 @@ public class GavriloGraphFilter implements Filter {
         mRgbaDst = new Mat(rows, cols, CvType.CV_8UC4);
 
         /* slices the array */
-        mValueSlices = new Mat[18];
-        mCanvasSlices = new Mat[18];
+
+        mValueSlices = new Mat[mSlices];
+        mCanvasSlices = new Mat[mSlices];
 
         mHistogramChannels = new MatOfInt(0);
 
@@ -66,6 +81,8 @@ public class GavriloGraphFilter implements Filter {
         mCanvas = new Mat(rows, cols, CvType.CV_8U);
 
         mZeroScalar = Scalar.all(0);
+
+    }
 
     @Override
     public Mat apply(Mat rgba) {
@@ -119,13 +136,13 @@ public class GavriloGraphFilter implements Filter {
             //Log.d(TAG, String.format("mHist size: %s", mHist.size()));
 
             area =  slice.size().area();
-            bound = area * 0.1;
+            bound = area * mAreaPercent;
             accu = 0;
             for (upper=0; upper<mHist.rows() && accu < bound; upper++) {
                 accu += mHist.get(upper, 0)[0];
             }
 
-            threshold = upper * (1 - upper * 0.00058);
+            threshold = upper * (1 - upper * mLightAdjust);
 
             Imgproc.threshold(slice, canv, threshold, 255, Imgproc.THRESH_BINARY_INV);
             /* erode */
