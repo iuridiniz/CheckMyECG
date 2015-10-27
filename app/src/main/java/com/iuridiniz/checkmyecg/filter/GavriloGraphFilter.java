@@ -10,9 +10,7 @@ import org.opencv.core.MatOfInt;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by iuri on 26/10/15.
@@ -20,11 +18,12 @@ import java.util.List;
 public class GavriloGraphFilter implements Filter {
 
     private static final String TAG = "GravriloGraphFilter";
+    protected MatOfInt mSplitFromTo;
     protected MatOfInt mHistogramSize;
     protected MatOfFloat mHistogramRanges;
     protected Mat mRgb, mHsv, mHist, mKernelErode, mKernelDilate, mRgbaDst;
 
-    protected Mat mValueChannel;
+    protected Mat mValueChannel, mHueSaturationChannels;
     protected Mat[] mValueSlices;
     protected Mat[] mCanvasSlices;
     protected MatOfInt mHistogramChannels;
@@ -60,7 +59,9 @@ public class GavriloGraphFilter implements Filter {
         mHistogramMask = new Mat();
         mHistogramSize = new MatOfInt(256);
         mHistogramRanges = new MatOfFloat(0, 256);
-    }
+        mSplitFromTo = new MatOfInt(2, 2);
+        mHueSaturationChannels = new Mat(rows, cols, CvType.CV_8UC2);
+        mValueChannel = new Mat(rows, cols, CvType.CV_8U);
 
 
     @Override
@@ -70,13 +71,10 @@ public class GavriloGraphFilter implements Filter {
         Imgproc.cvtColor(rgba, mRgb, Imgproc.COLOR_RGBA2RGB);
         Imgproc.cvtColor(mRgb, mHsv, Imgproc.COLOR_RGB2HSV);
         /* Split channels and get only the value channel */
-        List<Mat> mv = new ArrayList<Mat>();
-        //Arrays.asList(mHue, mSaturation, mValue);
-        Core.split(mHsv, mv);
 
-        mValueChannel = mv.get(2);
+        Core.mixChannels(Arrays.asList(mHsv), Arrays.asList(mHueSaturationChannels, mValueChannel), mSplitFromTo);
+
         mCanvas = Mat.zeros(mValueChannel.size(), mValueChannel.type());
-
         int step = mValueChannel.width()/ mValueSlices.length;
         Log.d(TAG, String.format("valueChannel size: %s", mValueChannel.size()));
 
