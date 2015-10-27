@@ -39,10 +39,6 @@ public class GavriloGraphFilter implements Filter {
     protected Mat mHistogramMask;
     protected Mat mCanvas;
 
-    //protected int threshold = 150;
-    //protected int slices = 18;
-    //protected int
-
     public GavriloGraphFilter(int rows, int cols) {
         this(rows, cols, DEFAULT_SLICES, DEFAULT_AREA_PERCENT, DEFAULT_LIGHT_ADJUST);
     }
@@ -51,14 +47,11 @@ public class GavriloGraphFilter implements Filter {
         mSlices = slices;
         mAreaPercent = areaPercent;
         mLightAdjust = lightAdjust;
+
         mHsv = new Mat(rows, cols, CvType.CV_8UC3);
         mRgb = new Mat(rows, cols, CvType.CV_8UC3);
+
         mHist = new Mat(rows, cols, CvType.CV_32F);
-
-        //mHue = new Mat(rows, cols, CvType.CV_8U);
-        //mSaturation = new Mat(rows, cols, CvType.CV_8U);
-        //mValue = new Mat(rows, cols, CvType.CV_8U);
-
 
         mKernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
         mKernelDilate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 3));
@@ -76,6 +69,7 @@ public class GavriloGraphFilter implements Filter {
         mHistogramSize = new MatOfInt(256);
         mHistogramRanges = new MatOfFloat(0, 256);
         mSplitFromTo = new MatOfInt(2, 2);
+
         mHueSaturationChannels = new Mat(rows, cols, CvType.CV_8UC2);
         mValueChannel = new Mat(rows, cols, CvType.CV_8U);
         mCanvas = new Mat(rows, cols, CvType.CV_8U);
@@ -97,8 +91,9 @@ public class GavriloGraphFilter implements Filter {
         /* zeroing canvas */
         mCanvas = Mat.zeros(mValueChannel.size(), mValueChannel.type());
         mCanvas.setTo(mZeroScalar);
+
         int step = mValueChannel.width()/ mValueSlices.length;
-        Log.d(TAG, String.format("valueChannel size: %s", mValueChannel.size()));
+        //Log.d(TAG, String.format("valueChannel size: %s", mValueChannel.size()));
 
         for (int i=0; i < mValueSlices.length; i++) {
             int hStart, hEnd, wStart, wEnd;
