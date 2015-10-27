@@ -7,6 +7,7 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfFloat;
 import org.opencv.core.MatOfInt;
+import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
@@ -19,6 +20,7 @@ public class GavriloGraphFilter implements Filter {
 
     private static final String TAG = "GravriloGraphFilter";
     protected MatOfInt mSplitFromTo;
+    protected Scalar mZeroScalar;
     protected MatOfInt mHistogramSize;
     protected MatOfFloat mHistogramRanges;
     protected Mat mRgb, mHsv, mHist, mKernelErode, mKernelDilate, mRgbaDst;
@@ -43,7 +45,6 @@ public class GavriloGraphFilter implements Filter {
         //mSaturation = new Mat(rows, cols, CvType.CV_8U);
         //mValue = new Mat(rows, cols, CvType.CV_8U);
 
-        //mCanvas = new Mat(rows, cols, CvType.CV_8U);
 
         mKernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
         mKernelDilate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 3));
@@ -62,7 +63,9 @@ public class GavriloGraphFilter implements Filter {
         mSplitFromTo = new MatOfInt(2, 2);
         mHueSaturationChannels = new Mat(rows, cols, CvType.CV_8UC2);
         mValueChannel = new Mat(rows, cols, CvType.CV_8U);
+        mCanvas = new Mat(rows, cols, CvType.CV_8U);
 
+        mZeroScalar = Scalar.all(0);
 
     @Override
     public Mat apply(Mat rgba) {
@@ -74,7 +77,9 @@ public class GavriloGraphFilter implements Filter {
 
         Core.mixChannels(Arrays.asList(mHsv), Arrays.asList(mHueSaturationChannels, mValueChannel), mSplitFromTo);
 
+        /* zeroing canvas */
         mCanvas = Mat.zeros(mValueChannel.size(), mValueChannel.type());
+        mCanvas.setTo(mZeroScalar);
         int step = mValueChannel.width()/ mValueSlices.length;
         Log.d(TAG, String.format("valueChannel size: %s", mValueChannel.size()));
 
