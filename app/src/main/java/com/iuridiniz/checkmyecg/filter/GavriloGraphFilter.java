@@ -19,10 +19,17 @@ import java.util.List;
  */
 public class GavriloGraphFilter implements Filter {
 
-    protected Mat mRgb, mHsv, mHist, mCanvas, mHue, mSaturation, mValue,
-            mKernelErode, mKernelDilate, mRgbaDst;;
-
     private static final String TAG = "GravriloGraphFilter";
+    protected MatOfInt mHistogramSize;
+    protected MatOfFloat mHistogramRanges;
+    protected Mat mRgb, mHsv, mHist, mKernelErode, mKernelDilate, mRgbaDst;
+
+    protected Mat mValueChannel;
+    protected Mat[] mValueSlices;
+    protected Mat[] mCanvasSlices;
+    protected MatOfInt mHistogramChannels;
+    protected Mat mHistogramMask;
+    protected Mat mCanvas;
 
     //protected int threshold = 150;
     //protected int slices = 18;
@@ -44,6 +51,15 @@ public class GavriloGraphFilter implements Filter {
 
         mRgbaDst = new Mat(rows, cols, CvType.CV_8UC4);
 
+        /* slices the array */
+        mValueSlices = new Mat[18];
+        mCanvasSlices = new Mat[18];
+
+        mHistogramChannels = new MatOfInt(0);
+
+        mHistogramMask = new Mat();
+        mHistogramSize = new MatOfInt(256);
+        mHistogramRanges = new MatOfFloat(0, 256);
     }
 
 
@@ -58,38 +74,34 @@ public class GavriloGraphFilter implements Filter {
         //Arrays.asList(mHue, mSaturation, mValue);
         Core.split(mHsv, mv);
 
-        /* slices the array */
-        Mat[] valueSlices = new Mat[18];
-        Mat[] canvasSlices = new Mat[18];
+        mValueChannel = mv.get(2);
+        mCanvas = Mat.zeros(mValueChannel.size(), mValueChannel.type());
 
-        Mat valueChannel = mv.get(2);
-        Mat canvas = Mat.zeros(valueChannel.size(), valueChannel.type());
+        int step = mValueChannel.width()/ mValueSlices.length;
+        Log.d(TAG, String.format("valueChannel size: %s", mValueChannel.size()));
 
-        int step = valueChannel.width()/valueSlices.length;
-        Log.d(TAG, String.format("valueChannel size: %s", valueChannel.size()));
-
-        for (int i=0; i < valueSlices.length; i++) {
+        for (int i=0; i < mValueSlices.length; i++) {
             int hStart, hEnd, wStart, wEnd;
 
             /* don't slice on y axis */
             hStart = 0;
-            hEnd = valueChannel.height();
+            hEnd = mValueChannel.height();
 
             /* slice on x axis */
             wStart = step * i;
-            wEnd = (step*(i+1))>valueChannel.width()?
-                        (step * valueSlices.length) + (valueChannel.width() - (step*(i+1))):
+            wEnd = (step*(i+1))> mValueChannel.width()?
+                        (step * mValueSlices.length) + (mValueChannel.width() - (step*(i+1))):
                         (step*(i+1));
 
-            valueSlices[i] = valueChannel.submat(hStart, hEnd, wStart, wEnd);
-            canvasSlices[i] = canvas.submat(hStart, hEnd, wStart, wEnd);
+            mValueSlices[i] = mValueChannel.submat(hStart, hEnd, wStart, wEnd);
+            mCanvasSlices[i] = mCanvas.submat(hStart, hEnd, wStart, wEnd);
 
             //Log.d(TAG, String.format("Slice[%s] %s:%s:%s:%s", i, hStart, hEnd, wStart, wEnd));
             //Log.d(TAG, String.format("Slice[%s] size: %s", i, valueSlices[i].size()));
         }
-        for (int i=0; i<valueSlices.length; i++) {
-            Mat slice = valueSlices[i];
-            Mat canv = canvasSlices[i];
+        for (int i=0; i< mValueSlices.length; i++) {
+            Mat slice = mValueSlices[i];
+            Mat canv = mCanvasSlices[i];
 
             double area;
             double accu, bound, threshold;
@@ -98,7 +110,8 @@ public class GavriloGraphFilter implements Filter {
             //List<Mat> images = new ArrayList<Mat>();
             //images.add(slice);
             //Arrays.asList(slice);
-            Imgproc.calcHist(Arrays.asList(slice), new MatOfInt(0), new Mat(), mHist, new MatOfInt(256), new MatOfFloat(0, 256));
+
+            Imgproc.calcHist(Arrays.asList(slice), mHistogramChannels, mHistogramMask, mHist, mHistogramSize, mHistogramRanges);
 
             //Log.d(TAG, String.format("mHist size: %s", mHist.size()));
 
@@ -118,7 +131,7 @@ public class GavriloGraphFilter implements Filter {
             Imgproc.dilate(canv, canv, mKernelDilate);
 
         }
-        Imgproc.cvtColor(canvas, mRgbaDst, Imgproc.COLOR_GRAY2RGBA);
+        Imgproc.cvtColor(mCanvas, mRgbaDst, Imgproc.COLOR_GRAY2RGBA);
         return mRgbaDst;
     }
 }
