@@ -1,7 +1,6 @@
 package com.iuridiniz.checkmyecg;
 
 import android.app.Activity;
-
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -11,8 +10,8 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageButton;
 
-import com.iuridiniz.checkmyecg.filter.ContrastFilter;
-import com.iuridiniz.checkmyecg.filter.GraphFilter2;
+import com.iuridiniz.checkmyecg.filter.Filter;
+import com.iuridiniz.checkmyecg.filter.NullFilter;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -26,8 +25,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     private boolean mOpenCvLoaded = false;
     private CameraBridgeViewBase mPreview;
 
-    private GraphFilter2 mGraphFilter2;
-    private ContrastFilter mContrastFilter;
+    private Filter mFilter;
+
     private ImageButton mCaptureButton;
 
     @Override
@@ -88,7 +87,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     private void takePhoto() {
         /* save current image */
-        Mat rgba = mContrastFilter.getResult();
+        Mat rgba = mFilter.getResult();
 
         if (rgba == null) {
             Log.e(TAG, "There's no photo");
@@ -118,9 +117,8 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
             mPreview.setVisibility(SurfaceView.VISIBLE);
             mPreview.setCvCameraViewListener(this);
         }
-        if (mOpenCvLoaded) {
-            mPreview.enableView();
-        }
+
+        mPreview.enableView();
 
     }
 
@@ -150,8 +148,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
 
     @Override
     public void onCameraViewStarted(int width, int height) {
-        mGraphFilter2 = new GraphFilter2(height, width);
-        mContrastFilter = new ContrastFilter(height, width, 100, 140);
+        mFilter = new NullFilter(height, width);
     }
 
     @Override
@@ -165,11 +162,7 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         Mat src = null, bottomLeft = null, topLeft = null, topRight = null, bottomRight = null;
 
         src = inputFrame.rgba();
-
-        Mat srcNormalized = mContrastFilter.apply(src);
-        Mat graph = mGraphFilter2.apply(srcNormalized);
-
-        topLeft = src;
+        Mat graph = mFilter.apply(src);
 
         drawMini(graph, topLeft, bottomLeft, topRight, bottomRight);
 
