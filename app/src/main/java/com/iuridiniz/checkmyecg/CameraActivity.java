@@ -127,7 +127,9 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
     @Override
     public void onResume() {
         super.onResume();
-        createCameraPreview();
+        if (mOpenCvLoaded) {
+            createCameraPreview();
+        }
     }
 
     @Override
