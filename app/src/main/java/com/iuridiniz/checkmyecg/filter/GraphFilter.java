@@ -57,4 +57,9 @@ public class GraphFilter implements Filter {
 
         return mRgbaDst;
     }
+
+    @Override
+    public Mat getResult() {
+        return mRgbaDst;
+    }
 }

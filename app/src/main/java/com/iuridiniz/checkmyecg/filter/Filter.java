@@ -7,4 +7,6 @@ import org.opencv.core.Mat;
  */
 public interface Filter {
     public Mat apply(Mat src);
+
+    public Mat getResult();
 }

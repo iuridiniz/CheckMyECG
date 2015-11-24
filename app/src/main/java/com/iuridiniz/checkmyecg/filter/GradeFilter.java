@@ -61,4 +61,9 @@ public class GradeFilter implements Filter {
 
         return mRgba;
     }
+
+    @Override
+    public Mat getResult() {
+        return mRgba;
+    }
 }

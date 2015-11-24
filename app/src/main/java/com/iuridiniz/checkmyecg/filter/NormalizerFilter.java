@@ -34,6 +34,11 @@ public class NormalizerFilter implements Filter {
         return mRgbaDst;
     }
 
+    @Override
+    public Mat getResult() {
+        return mRgbaDst;
+    }
+
     public double getAlpha() {
         return mAlpha;
     }

@@ -149,4 +149,9 @@ public class GavriloGraphFilter implements Filter {
         Imgproc.cvtColor(mCanvas, mRgbaDst, Imgproc.COLOR_GRAY2RGBA);
         return mRgbaDst;
     }
+
+    @Override
+    public Mat getResult() {
+        return mRgbaDst;
+    }
 }
