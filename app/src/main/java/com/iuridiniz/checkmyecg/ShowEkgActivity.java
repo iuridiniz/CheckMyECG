@@ -236,16 +236,34 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
         int maxX = modifiedImageRgba.cols();
         int maxY = modifiedImageRgba.rows();
 
-        if (mX1 < 0) mX1 = 0;
-        if (mX2 < 0) mX2 = 0;
-        if (mY1 < 0) mY1 = 0;
-        if (mY2 < 0) mY2 = 0;
-        if (mX1 > maxX) mX1 = maxX;
-        if (mX2 > maxX) mX2 = maxX;
-        if (mY1 > maxY) mY1 = maxY;
-        if (mY2 > maxY) mY2 = maxY;
+        int x1 = mX1, x2 = mX2, y1 = mY1, y2 = mY2;
 
-        Rect rect = new Rect(new Point(mX1, mY1), new Point(mX2, mY2));
+        int w = mImageContent.getWidth();
+        int h = mImageContent.getHeight();
+
+        if (w == 0 || h == 0) {
+            return;
+        }
+
+        /* transform coordinates (imageX:viewX <--> imageW:viewW) */
+        x1 = Math.round(maxX / (float) w * x1);
+        x2 = Math.round(maxX / (float) w * x2);
+
+        y1 = Math.round(maxY / (float) h * y1);
+        y2 = Math.round(maxY / (float) h * y2);
+
+        if (x1 < 0) x1 = 0;
+        if (x2 < 0) x2 = 0;
+        if (y1 < 0) y1 = 0;
+        if (y2 < 0) y2 = 0;
+        if (x1 > maxX) x1 = maxX;
+        if (x2 > maxX) x2 = maxX;
+        if (y1 > maxY) y1 = maxY;
+        if (y2 > maxY) y2 = maxY;
+
+        /* TODO: optimize this.
+           Do roi over a small image when drawing rectangle, only use full image for detect ECG */
+        Rect rect = new Rect(new Point(x1, y1), new Point(x2, y2));
         Mat roi = modifiedImageRgba.submat(rect);
         if (needDrawECG) {
             GavriloGraphFilter filter = new GavriloGraphFilter(roi.rows(), roi.cols());
