@@ -130,6 +130,8 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
             imageBgr = Highgui.imread(mDataPath);
         } else if (mUri != null) {
             /* XXX: uri is complicated */
+            /* FROM: http://answers.opencv.org/question/31855/java-api-loading-image-from-any-java-inputstream/ */
+
             byte[] temporaryImageInMemory;
             try {
                 InputStream is = getContentResolver().openInputStream(mUri);
