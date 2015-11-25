@@ -1,57 +1,35 @@
 package com.iuridiniz.checkmyecg;
 
-import java.util.List;
-
-import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
-import android.support.v7.app.ActionBarActivity;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
 import android.os.Bundle;
-import android.support.v4.view.ViewPager;
+import android.os.Handler;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageView;
 
+import com.iuridiniz.checkmyecg.filter.GavriloGraphFilter;
 import com.iuridiniz.checkmyecg.filter.GraphFilter2;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfPoint;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
 import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 
 
-public class ShowEkgActivity extends ActionBarActivity {
-
-    /**
-     * The {@link android.support.v4.view.PagerAdapter} that will provide
-     * fragments for each of the sections. We use a
-     * {@link FragmentPagerAdapter} derivative, which will keep every
-     * loaded fragment in memory. If this becomes too memory intensive, it
-     * may be best to switch to a
-     * {@link android.support.v4.app.FragmentStatePagerAdapter}.
-     */
-    SectionsPagerAdapter mSectionsPagerAdapter;
-
-    /**
-     * The {@link ViewPager} that will host the section contents.
-     */
-    ViewPager mViewPager;
-
+public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchListener {
 
     public static final String EXTRA_PHOTO_URI =
             "com.iuridiniz.checkmyecg.ShowEkgActivity.extra.PHOTO_URI";
@@ -65,6 +43,12 @@ public class ShowEkgActivity extends ActionBarActivity {
 
     private GraphFilter2 mGraphFilter;
     private ImageView mImageContent;
+    private Bitmap mBitmap;
+
+    private int mX1 = 0, mX2 = 0, mY1 = 0, mY2 = 0;
+    private Mat mImageRgba;
+    private boolean mDrawing = false;
+    private boolean needDrawECG = false;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -74,6 +58,8 @@ public class ShowEkgActivity extends ActionBarActivity {
         final Intent intent = getIntent();
         mUri = intent.getParcelableExtra(EXTRA_PHOTO_URI);
         mDataPath = intent.getStringExtra(EXTRA_PHOTO_DATA_PATH);
+
+        mImageContent = (ImageView) findViewById(R.id.image_content);
 
         /* init openCV */
         if (OpenCVLoader.initDebug()) {
@@ -111,146 +97,14 @@ public class ShowEkgActivity extends ActionBarActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_show_ekg, menu);
-        return true;
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        //if (id == R.id.action_settings) {
-        //    return true;
-        //}
-
         return super.onOptionsItemSelected(item);
-    }
-
-
-    /**
-     * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-     * one of the sections/tabs/pages.
-     */
-    public class SectionsPagerAdapter extends FragmentPagerAdapter {
-
-        List<MatOfPoint> mContours;
-        Mat mImage;
-
-        protected SectionsPagerAdapter(FragmentManager fm) {
-            super(fm);
-        }
-
-        public SectionsPagerAdapter(FragmentManager supportFragmentManager, Mat rgbaImage, List<MatOfPoint> contours) {
-            this(supportFragmentManager);
-            mImage = rgbaImage;
-            mContours = contours;
-        }
-
-        @Override
-        public Fragment getItem(int position) {
-            // getItem is called to instantiate the fragment for the given page.
-            // Return a PlaceholderFragment (defined as a static inner class below).
-            return PlaceholderFragment.newInstance(position, mImage, mContours.get(position));
-        }
-
-        @Override
-        public int getCount() {
-            return mContours.size();
-        }
-
-        @Override
-        public CharSequence getPageTitle(int position) {
-            return null;
-        }
-    }
-
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class PlaceholderFragment extends Fragment {
-        /**
-         * The fragment argument representing the section number for this
-         * fragment.
-         */
-        private static final String ARG_SECTION_NUMBER = "section_number";
-        private MatOfPoint mContour;
-        private Mat mImage;
-        private Mat mImageRoi;
-        private ImageView mImageContent;
-        private Button mSelectButton;
-
-        /**
-         * Returns a new instance of this fragment for the given section
-         * number.
-         */
-        public static PlaceholderFragment newInstance(int sectionNumber, Mat img, MatOfPoint contour) {
-            PlaceholderFragment fragment = new PlaceholderFragment();
-            //Bundle args = new Bundle();
-            //args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-
-            //fragment.setArguments(args);
-            fragment.mImage = img;
-            fragment.mContour = contour;
-            return fragment;
-        }
-
-        public PlaceholderFragment() {
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, final ViewGroup container,
-                                 Bundle savedInstanceState) {
-            final View rootView = inflater.inflate(R.layout.fragment_show_ekg, container, false);
-            mImageContent = (ImageView) rootView.findViewById(R.id.image_content);
-            mSelectButton = (Button) rootView.findViewById(R.id.select_button);
-
-            /* show image */
-            Rect r = Imgproc.boundingRect(mContour);
-            Bitmap bmp = Bitmap.createBitmap(r.width, r.height, Bitmap.Config.ARGB_8888);
-            mImageRoi = mImage.submat(r.y, r.y + r.height, r.x, r.x + r.width);
-            Utils.matToBitmap(mImageRoi, bmp);
-
-            mImageContent.setImageBitmap(bmp);
-
-            /* setup button */
-            mSelectButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Log.d(TAG, "Select Button clicked");
-                    ((Activity)rootView.getContext()).runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            takePhoto();
-                        }
-                    });
-                }
-            });
-
-            return rootView;
-        }
-
-        private void takePhoto() {
-            Activity activity = (Activity) mImageContent.getContext();
-            TakePhoto takePhoto = TakePhoto.invoke(activity, mImageRoi);
-            if (takePhoto.hasError()) {
-                activity.finish();
-                Log.e(TAG, takePhoto.getErrorString(), takePhoto.getException());
-                return;
-            }
-            Uri uri = takePhoto.getUri();
-            String photoPath = takePhoto.getPhotoPath();
-
-            /* Open the photo on result */
-            final Intent intent = new Intent(activity, ResultEkgActivity.class);
-            intent.putExtra(ResultEkgActivity.EXTRA_PHOTO_URI, uri);
-            intent.putExtra(ResultEkgActivity.EXTRA_PHOTO_DATA_PATH, photoPath);
-            startActivity(intent);
-        }
     }
 
 
@@ -271,44 +125,100 @@ public class ShowEkgActivity extends ActionBarActivity {
                 imageBgr.size(),
                 imageBgr.channels(),
                 CvType.typeToString(imageBgr.type())));
-        mGraphFilter = new GraphFilter2(imageBgr.rows(), imageBgr.cols());
+        //mGraphFilter = new GraphFilter2(imageBgr.rows(), imageBgr.cols());
 
-        final Mat imageRgba = new Mat(imageBgr.rows(), imageBgr.cols(), CvType.CV_8UC4);
+        mImageRgba = new Mat(imageBgr.rows(), imageBgr.cols(), CvType.CV_8UC4);
 
-        Imgproc.cvtColor(imageBgr, imageRgba, Imgproc.COLOR_BGR2RGBA);
-
-        final Mat result = mGraphFilter.apply(imageRgba);
+        Imgproc.cvtColor(imageBgr, mImageRgba, Imgproc.COLOR_BGR2RGBA);
 
         /* show image */
-        //Bitmap bm = Bitmap.createBitmap(result.cols(), result.rows(), Bitmap.Config.ARGB_8888);
-        //Utils.matToBitmap(result, bm);
-        //mImageContent.setImageBitmap(bm);
+        mBitmap = Bitmap.createBitmap(mImageRgba.cols(), mImageRgba.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(mImageRgba, mBitmap);
+        mImageContent.setImageBitmap(mBitmap);
 
         imageBgr.release();
         imageBgr = null;
 
-//        final ArrayList<Bitmap> bmps = new ArrayList<Bitmap>(10);
-//
-//        for (MatOfPoint mp : mGraphFilter.getContours(10)) {
-//            Rect r = Imgproc.boundingRect(mp);
-//            Bitmap bmp = Bitmap.createBitmap(r.width, r.height, Bitmap.Config.ARGB_8888);
-//
-//            Mat roi = imageRgba.submat(r.y, r.y + r.height, r.x, r.x + r.width);
-//
-//            Utils.matToBitmap(roi, bmp);
-//            bmps.add(bmp);
-//
-//        }
-
-        // Create the adapter that will return a fragment for each of the three
-        // primary sections of the activity.
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), imageRgba, mGraphFilter.getContours(10));
-
-
-        // Set up the ViewPager with the sections adapter.
-        mViewPager = (ViewPager) findViewById(R.id.pager);
-        mViewPager.setAdapter(mSectionsPagerAdapter);
+        mImageContent.setOnTouchListener(this);
 
     }
 
+    @Override
+    public boolean onTouch(View view, MotionEvent motionEvent) {
+        int eventaction = motionEvent.getAction();
+
+        int x = (int) motionEvent.getX();
+        int y = (int) motionEvent.getY();
+
+
+        boolean needDraw = false;
+
+        switch (eventaction) {
+
+            case MotionEvent.ACTION_DOWN:
+                needDrawECG = false;
+                mX1 = x;
+                mY1 = y;
+                break;
+            case MotionEvent.ACTION_UP:
+                needDrawECG = true;
+            case MotionEvent.ACTION_MOVE:
+                mX2 = x;
+                mY2 = y;
+                needDraw = true;
+                break;
+        }
+        if (needDraw && !mDrawing) {
+            mDrawing = true;
+            final Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            //Log.e(TAG, "Drawing");
+                            drawRectangle();
+                            mDrawing = false;
+                            needDrawECG = false;
+                        }
+                    });
+                }
+            }, 200);
+
+        }
+
+        return true;
+    }
+
+    private void drawRectangle() {
+        Mat modifiedImageRgba = mImageRgba.clone();
+        int maxX = modifiedImageRgba.cols();
+        int maxY = modifiedImageRgba.rows();
+
+        if (mX1 < 0) mX1 = 0;
+        if (mX2 < 0) mX2 = 0;
+        if (mY1 < 0) mY1 = 0;
+        if (mY2 < 0) mY2 = 0;
+        if (mX1 > maxX) mX1 = maxX;
+        if (mX2 > maxX) mX2 = maxX;
+        if (mY1 > maxY) mY1 = maxY;
+        if (mY2 > maxY) mY2 = maxY;
+
+        Rect rect = new Rect(new Point(mX1, mY1), new Point(mX2, mY2));
+        Mat roi = modifiedImageRgba.submat(rect);
+        if (needDrawECG) {
+            GavriloGraphFilter filter = new GavriloGraphFilter(roi.rows(), roi.cols());
+            Mat result = filter.apply(roi);
+            result.copyTo(roi);
+        } else {
+            Mat color = new Mat(roi.size(), CvType.CV_8UC4, new Scalar(0xFF, 0xFF, 0xFF, 0x00));
+            double alpha = 0.3;
+            Core.addWeighted(color, alpha, roi, 1 - alpha, 0, roi);
+            Core.rectangle(roi, new Point(0, 0), new Point(roi.cols(), roi.rows()), new Scalar(0xFF, 0xFF, 0x00, 0x00), 5);
+        }
+        mBitmap = Bitmap.createBitmap(modifiedImageRgba.cols(), modifiedImageRgba.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(modifiedImageRgba, mBitmap);
+        mImageContent.setImageBitmap(mBitmap);
+    }
 }
