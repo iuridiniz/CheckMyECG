@@ -22,11 +22,15 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 
 
 public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchListener {
@@ -56,9 +60,18 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
         setContentView(R.layout.activity_show_ekg);
 
         final Intent intent = getIntent();
-        mUri = intent.getParcelableExtra(EXTRA_PHOTO_URI);
-        mDataPath = intent.getStringExtra(EXTRA_PHOTO_DATA_PATH);
+        String action = intent.getAction();
+        String type = intent.getType();
+        Log.d(TAG, String.format("Intent action: %s and type: %s", action, type));
 
+        if (Intent.ACTION_SEND.equals(action) && type != null) {
+            if (type.startsWith("image/")) {
+                mUri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
+            }
+        } else {
+            mUri = intent.getParcelableExtra(EXTRA_PHOTO_URI);
+            mDataPath = intent.getStringExtra(EXTRA_PHOTO_DATA_PATH);
+        }
         mImageContent = (ImageView) findViewById(R.id.image_content);
 
         /* init openCV */
@@ -111,21 +124,49 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
     private void onReady(Bundle savedInstanceState) {
 
         /* load image */
-        Log.d(TAG, String.format("Loading '%s' as image", mDataPath));
-        Mat imageBgr = Highgui.imread(mDataPath);
+        Mat imageBgr = null;
+        Log.d(TAG, String.format("Loading '%s'(URI: '%s') as image", mDataPath, mUri));
+        if (mDataPath != null) {
+            imageBgr = Highgui.imread(mDataPath);
+        } else if (mUri != null) {
+            /* XXX: uri is complicated */
+            byte[] temporaryImageInMemory;
+            try {
+                InputStream is = getContentResolver().openInputStream(mUri);
+                // Copy content of the image to byte-array
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                int nRead;
+                byte[] data = new byte[16384];
 
-        if (!(imageBgr.width() > 0)) {
+                while ((nRead = is.read(data, 0, data.length)) != -1) {
+                    buffer.write(data, 0, nRead);
+                }
+
+                buffer.flush();
+                temporaryImageInMemory = buffer.toByteArray();
+                buffer.close();
+                is.close();
+
+                imageBgr = Highgui.imdecode(new MatOfByte(temporaryImageInMemory), Highgui.IMREAD_COLOR);
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.e(TAG, "Unable to load image from URI", e);
+            }
+        }
+
+        if (imageBgr == null || !(imageBgr.width() > 0)) {
             Log.e(TAG, "Unable to load image");
             finish();
-            imageBgr.release();
-            imageBgr = null;
+
+            if (imageBgr != null)
+                imageBgr.release();
+            return;
         }
 
         Log.d(TAG, String.format("Image loaded (%s), channels: %d, type: %s",
                 imageBgr.size(),
                 imageBgr.channels(),
                 CvType.typeToString(imageBgr.type())));
-        //mGraphFilter = new GraphFilter2(imageBgr.rows(), imageBgr.cols());
 
         mImageRgba = new Mat(imageBgr.rows(), imageBgr.cols(), CvType.CV_8UC4);
 
@@ -137,7 +178,6 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
         mImageContent.setImageBitmap(mBitmap);
 
         imageBgr.release();
-        imageBgr = null;
 
         mImageContent.setOnTouchListener(this);
 

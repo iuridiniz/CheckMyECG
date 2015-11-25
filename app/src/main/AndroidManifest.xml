@@ -30,6 +30,11 @@
             android:name=".ShowEkgActivity"
             android:label="@string/title_activity_show_ekg"
             android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="image/*"/>
+            </intent-filter>
         </activity>
         <activity
             android:name=".ResultEkgActivity"
