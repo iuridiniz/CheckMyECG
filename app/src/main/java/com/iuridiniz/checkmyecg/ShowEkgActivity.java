@@ -13,8 +13,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 
+import com.iuridiniz.checkmyecg.filter.Filter;
 import com.iuridiniz.checkmyecg.filter.GavriloGraphFilter;
-import com.iuridiniz.checkmyecg.filter.GraphFilter2;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.OpenCVLoader;
@@ -45,7 +45,6 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
     private Uri mUri;
     private String mDataPath;
 
-    private GraphFilter2 mGraphFilter;
     private ImageView mImageContent;
     private Bitmap mBitmap;
 
@@ -53,6 +52,8 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
     private Mat mImageRgba;
     private boolean mDrawing = false;
     private boolean needDrawECG = false;
+    private Filter mFilter;
+    private Mat ekgEclosed;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -268,10 +269,11 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
         Rect rect = new Rect(new Point(x1, y1), new Point(x2, y2));
         Mat roi = modifiedImageRgba.submat(rect);
         if (needDrawECG) {
-            GavriloGraphFilter filter = new GavriloGraphFilter(roi.rows(), roi.cols());
-            Mat result = filter.apply(roi);
+            mFilter = new GavriloGraphFilter(roi.rows(), roi.cols());
+            Mat result = mFilter.apply(roi);
             result.copyTo(roi);
         } else {
+            /* From: http://stackoverflow.com/questions/24480751/how-to-create-a-semi-transparent-shape */
             Mat color = new Mat(roi.size(), CvType.CV_8UC4, new Scalar(0xFF, 0xFF, 0xFF, 0x00));
             double alpha = 0.3;
             Core.addWeighted(color, alpha, roi, 1 - alpha, 0, roi);
