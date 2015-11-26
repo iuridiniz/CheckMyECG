@@ -1,17 +1,20 @@
 package com.iuridiniz.checkmyecg.filter;
 
-import android.util.Log;
-
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfFloat;
 import org.opencv.core.MatOfInt;
+import org.opencv.core.MatOfPoint;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * Created by iuri on 26/10/15.
@@ -38,6 +41,14 @@ public class GavriloGraphFilter implements Filter {
     protected MatOfInt mHistogramChannels;
     protected Mat mHistogramMask;
     protected Mat mCanvas;
+
+    /* countours */
+    private final Size mKSize;
+    protected Mat mRgbaOrig;
+    protected Mat mBlurred;
+    protected Mat mEdged;
+    protected Mat mHierarchy;
+    protected List<MatOfPoint> mContours = new ArrayList<MatOfPoint>();
 
     public GavriloGraphFilter(int rows, int cols) {
         this(rows, cols, DEFAULT_SLICES, DEFAULT_AREA_PERCENT, DEFAULT_LIGHT_ADJUST);
@@ -76,6 +87,14 @@ public class GavriloGraphFilter implements Filter {
 
         mZeroScalar = Scalar.all(0);
 
+
+        /* countours */
+
+        mBlurred = new Mat(rows, cols, CvType.CV_8UC1);
+        mEdged = new Mat(rows, cols, CvType.CV_8UC1);
+        mRgbaOrig = new Mat(rows, cols, CvType.CV_8UC4);
+        mKSize = new Size(11, 11);
+        mHierarchy = new Mat();
     }
 
     @Override
@@ -95,6 +114,7 @@ public class GavriloGraphFilter implements Filter {
         int step = mValueChannel.width()/ mValueSlices.length;
         //Log.d(TAG, String.format("valueChannel size: %s", mValueChannel.size()));
 
+        /* Slice the graph in order to handle with contraste differences */
         for (int i=0; i < mValueSlices.length; i++) {
             int hStart, hEnd, wStart, wEnd;
 
@@ -146,8 +166,119 @@ public class GavriloGraphFilter implements Filter {
             Imgproc.dilate(canv, canv, mKernelDilate);
 
         }
+
+        dilateCountours();
         Imgproc.cvtColor(mCanvas, mRgbaDst, Imgproc.COLOR_GRAY2RGBA);
         return mRgbaDst;
+    }
+
+    public void dilateCountours() {
+        Imgproc.GaussianBlur(mCanvas, mBlurred, mKSize, 0);
+        Imgproc.Canny(mBlurred, mEdged, 30, 150);
+
+        mContours.clear();
+        /* FIXME: there's a kind of memory leak here (findContours), We need to call gc.collect in order to free resources */
+        Imgproc.findContours(mEdged, mContours, mHierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        if (mContours.size() == 0) {
+            return;
+        }
+        /* sort the countours */
+        Comparator<MatOfPoint> cmp = new Comparator<MatOfPoint>() {
+            @Override
+            public int compare(MatOfPoint lhs, MatOfPoint rhs) {
+                return rhs.rows() - lhs.rows();
+            }
+        };
+        Collections.sort(mContours, cmp);
+        /* draw countours with more points */
+        int max = 4;
+        int thinkness = 2*max;
+        for (int i = 0; i < max && i < mContours.size(); i++ ) {
+            Scalar color = new Scalar(255);
+            thinkness -= i*2;
+            thinkness = thinkness < 1?1:thinkness;
+
+            Imgproc.drawContours(mCanvas, mContours, i, color, thinkness);
+        }
+        /* erode and dilate */
+        Mat kernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(max, max));
+        Mat kernelDilate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2, max));
+        Imgproc.erode(mCanvas, mCanvas, kernelErode);
+        Imgproc.dilate(mCanvas, mCanvas, kernelDilate);
+
+    }
+
+    public void getPoints(double resolution, List<Number> outSeriesX, List<Number> outSeriesY) {
+        int cols = mCanvas.cols();
+        int rows = mCanvas.rows();
+
+        //List<Number> seriesX = new ArrayList<Number>();
+        //List<Number> seriesY = new ArrayList<Number>();
+        /* find points analyzing each column */
+        double time = 0.04/resolution;
+        double voltage = 0.1/resolution;
+        for (int col = 0; col < cols; col++) {
+
+            /* find white points in each row of a column */
+            boolean is_connected = false;
+            List<Integer> whitePointsConnected = null;
+            List<List> whitePointsCandidates = new ArrayList<List>();
+            int max_pos = -1; /* pos of white set with more white points */
+            int max_qtd = 0; /* qtd of set with more white points */
+            for (int row=0; row < rows; row++) {
+                int value = (int)(mCanvas.get(row, col)[0]);
+
+                boolean save_set = false;
+                if (value == 255) {
+                    /* new white point */
+                    if (! is_connected) {
+                        assert(whitePointsConnected == null);
+                        /* new set of points (not connected to previous) */
+                        whitePointsConnected = new ArrayList<Integer>();
+                    }
+                    whitePointsConnected.add(row);
+                    is_connected = true;
+                    if (row + 1 == rows) {
+                        /* last row */
+                        save_set = true;
+                    }
+                } else {
+                    if (is_connected) {
+                        /* end of connected points, save it */
+                        save_set = true;
+                        is_connected = false;
+                    }
+
+                }
+                if (save_set) {
+                    int qtd = whitePointsConnected.size();
+                    if (qtd > max_qtd) {
+                        /* a new max */
+                        max_qtd = qtd;
+                        max_pos = whitePointsCandidates.size();
+                    }
+                    //assert(whitePointsConnected != null);
+                    whitePointsCandidates.add(whitePointsConnected);
+                    whitePointsConnected = null;
+                }
+
+            }
+            if (max_pos >= 0) {
+                whitePointsConnected = whitePointsCandidates.get(max_pos);
+                int sum = 0;
+                for (int v: whitePointsConnected) {
+                    sum += v;
+                }
+                /* mean point */
+                int value = Math.round(sum/(float)max_qtd);
+                double x, y;
+                x = time * col;
+                y = (rows - value) * voltage;
+                outSeriesX.add(x);
+                outSeriesY.add(y);
+            }
+        }
     }
 
     @Override
