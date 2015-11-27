@@ -27,7 +27,7 @@
             android:label="@string/title_activity_camera"
             android:screenOrientation="landscape" />
         <activity
-            android:name=".ShowEkgActivity"
+            android:name=".SelectEkgActivity"
             android:label="@string/title_activity_show_ekg"
             android:screenOrientation="landscape" >
             <intent-filter>

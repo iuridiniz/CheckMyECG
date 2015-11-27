@@ -1,9 +1,6 @@
 package com.iuridiniz.checkmyecg;
 
-import android.app.AlertDialog;
-import android.app.Dialog;
 import android.app.ProgressDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -11,7 +8,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
-import android.support.v7.internal.view.menu.ActionMenuItemView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -20,11 +16,8 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.iuridiniz.checkmyecg.filter.Filter;
 import com.iuridiniz.checkmyecg.filter.GavriloGradeFilter;
 import com.iuridiniz.checkmyecg.filter.GavriloGraphFilter;
-import com.iuridiniz.checkmyecg.filter.GraphFilter;
-import com.iuridiniz.checkmyecg.filter.GraphFilter2;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.OpenCVLoader;
@@ -46,12 +39,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchListener {
+public class SelectEkgActivity extends ActionBarActivity implements View.OnTouchListener {
 
     public static final String EXTRA_PHOTO_URI =
-            "com.iuridiniz.checkmyecg.ShowEkgActivity.extra.PHOTO_URI";
+            "com.iuridiniz.checkmyecg.SelectEkgActivity.extra.PHOTO_URI";
     public static final String EXTRA_PHOTO_DATA_PATH =
-            "com.iuridiniz.checkmyecg.ShowEkgActivity.extra.PHOTO_DATA_PATH";
+            "com.iuridiniz.checkmyecg.SelectEkgActivity.extra.PHOTO_DATA_PATH";
 
     public static final String TAG = "EkgShow";
     private boolean mOpenCvLoaded = false;
@@ -329,7 +322,7 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
             Mat resultGraph = mGraphFilter.apply(roi);
 
             AsyncTask<Void, Void, Double> task = new AsyncTask<Void, Void, Double>() {
-                private ProgressDialog dialog = new ProgressDialog(ShowEkgActivity.this);
+                private ProgressDialog dialog = new ProgressDialog(SelectEkgActivity.this);
 
                 @Override
                 protected void onPreExecute() {
@@ -376,7 +369,7 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
                 protected void onPostExecute(Double ratio) {
 
                     if (ratio < 0.85) {
-                        Toast.makeText(ShowEkgActivity.this, R.string.ekg_looks_like, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(SelectEkgActivity.this, R.string.ekg_looks_like, Toast.LENGTH_SHORT).show();
                     }
                     // after completed finished the progressbar
                     dialog.dismiss();

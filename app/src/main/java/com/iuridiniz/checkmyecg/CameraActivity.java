@@ -104,9 +104,9 @@ public class CameraActivity extends Activity implements CameraBridgeViewBase.CvC
         String photoPath = takePhoto.getPhotoPath();
 
         /* Open the photo */
-        final Intent intent = new Intent(this, ShowEkgActivity.class);
-        intent.putExtra(ShowEkgActivity.EXTRA_PHOTO_URI, uri);
-        intent.putExtra(ShowEkgActivity.EXTRA_PHOTO_DATA_PATH, photoPath);
+        final Intent intent = new Intent(this, SelectEkgActivity.class);
+        intent.putExtra(SelectEkgActivity.EXTRA_PHOTO_URI, uri);
+        intent.putExtra(SelectEkgActivity.EXTRA_PHOTO_DATA_PATH, photoPath);
         startActivity(intent);
     }
 
