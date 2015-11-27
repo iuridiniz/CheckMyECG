@@ -12,4 +12,6 @@
     <string name="title_activity_show_ekg">Seleccione ECG</string>
     <string name="text_ekg_fail" >No se puede determinar nada sobre este EKG</string>
     <string name="pick_derivation">Seleccione la derivación</string>
+    <string name="ekg_looks_like">Does not look like an EKG</string>
+    <string name="action_select_ekg"></string>
 </resources>
