@@ -36,6 +36,7 @@ import org.opencv.core.MatOfByte;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 
@@ -299,27 +300,26 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
         }
 
 
-        /* transform coordinates (imageX:viewX <--> imageW:viewW) */
-        x1 = Math.round(maxX / (float) w * x1);
-        x2 = Math.round(maxX / (float) w * x2);
-
-        y1 = Math.round(maxY / (float) h * y1);
-        y2 = Math.round(maxY / (float) h * y2);
-
-        if (x1 < 0) x1 = 0;
-        if (x2 < 0) x2 = 0;
-        if (y1 < 0) y1 = 0;
-        if (y2 < 0) y2 = 0;
-        if (x1 > maxX) x1 = maxX;
-        if (x2 > maxX) x2 = maxX;
-        if (y1 > maxY) y1 = maxY;
-        if (y2 > maxY) y2 = maxY;
-
-        /* TODO: optimize this.
-           Do roi over a small image when drawing rectangle, only use full image for detect ECG */
-        Rect rect = new Rect(new Point(x1, y1), new Point(x2, y2));
-        Mat roi = modifiedImageRgba.submat(rect);
         if (needDrawECG) {
+            /* transform coordinates (imageX:viewX <--> imageW:viewW) */
+            x1 = Math.round(maxX / (float) w * x1);
+            x2 = Math.round(maxX / (float) w * x2);
+
+            y1 = Math.round(maxY / (float) h * y1);
+            y2 = Math.round(maxY / (float) h * y2);
+
+            if (x1 < 0) x1 = 0;
+            if (x2 < 0) x2 = 0;
+            if (y1 < 0) y1 = 0;
+            if (y2 < 0) y2 = 0;
+            if (x1 > maxX) x1 = maxX;
+            if (x2 > maxX) x2 = maxX;
+            if (y1 > maxY) y1 = maxY;
+            if (y2 > maxY) y2 = maxY;
+
+            Rect rect = new Rect(new Point(x1, y1), new Point(x2, y2));
+            Mat roi = modifiedImageRgba.submat(rect);
+
             mFilter = new GavriloGraphFilter(roi.rows(), roi.cols());
             /* save original */
             mEkgOriginal = roi.clone();
@@ -332,7 +332,7 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
 
                     @Override
                     protected void onPreExecute() {
-                        dialog.setMessage("Processing...");
+                        dialog.setMessage(getResources().getString(R.string.processing));
                         dialog.show();
                     }
 
@@ -376,17 +376,36 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
                 result.copyTo(roi);
 
             }
-
+            mBitmap = Bitmap.createBitmap(modifiedImageRgba.cols(), modifiedImageRgba.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(modifiedImageRgba, mBitmap);
+            mImageContent.setImageBitmap(mBitmap);
         } else {
+            if (x1 < 0) x1 = 0;
+            if (x2 < 0) x2 = 0;
+            if (y1 < 0) y1 = 0;
+            if (y2 < 0) y2 = 0;
+            if (x1 > w) x1 = w;
+            if (x2 > w) x2 = w;
+            if (y1 > h) y1 = h;
+            if (y2 > h) y2 = h;
+
+            Size size = new Size(w, h);
+            Mat thumbnail = new Mat(size, mImageRgba.type());
+
+            Imgproc.resize(mImageRgba, thumbnail, size);
+
+            Rect rect = new Rect(new Point(x1, y1), new Point(x2, y2));
+            Mat roi = thumbnail.submat(rect);
+
             /* From: http://stackoverflow.com/questions/24480751/how-to-create-a-semi-transparent-shape */
             Mat color = new Mat(roi.size(), CvType.CV_8UC4, new Scalar(0xFF, 0xFF, 0xFF, 0x00));
             double alpha = 0.3;
             Core.addWeighted(color, alpha, roi, 1 - alpha, 0, roi);
             Core.rectangle(roi, new Point(0, 0), new Point(roi.cols(), roi.rows()), new Scalar(0xFF, 0xFF, 0x00, 0x00), 5);
-
+            mBitmap = Bitmap.createBitmap(thumbnail.cols(), thumbnail.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(thumbnail, mBitmap);
+            mImageContent.setImageBitmap(mBitmap);
         }
-        mBitmap = Bitmap.createBitmap(modifiedImageRgba.cols(), modifiedImageRgba.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(modifiedImageRgba, mBitmap);
-        mImageContent.setImageBitmap(mBitmap);
+
     }
 }
