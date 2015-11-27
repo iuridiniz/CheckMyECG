@@ -368,7 +368,7 @@ public class SelectEkgActivity extends ActionBarActivity implements View.OnTouch
                 @Override
                 protected void onPostExecute(Double ratio) {
 
-                    if (ratio < 0.85) {
+                    if (ratio < 0.92) {
                         Toast.makeText(SelectEkgActivity.this, R.string.ekg_looks_like, Toast.LENGTH_SHORT).show();
                     }
                     // after completed finished the progressbar
