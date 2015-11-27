@@ -1,5 +1,7 @@
 package com.iuridiniz.checkmyecg.filter;
 
+import android.util.Log;
+
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -14,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -213,19 +216,27 @@ public class GavriloGraphFilter implements Filter {
         int cols = mCanvas.cols();
         int rows = mCanvas.rows();
 
+        boolean flag = false;
+
         //List<Number> seriesX = new ArrayList<Number>();
         //List<Number> seriesY = new ArrayList<Number>();
+
         /* find points analyzing each column */
         double time = 0.04/resolution;
         double voltage = 0.1/resolution;
+        int sufficientPoints = 60;
+        int strictClosePointsCount = sufficientPoints/10;
+        //int limitDistance = Integer.MAX_VALUE; /* dinamic */
+        final int limitDistance = 60;
+
+        LinkedList<Integer> lastPoints = new LinkedList<Integer>();
+
         for (int col = 0; col < cols; col++) {
 
             /* find white points in each row of a column */
             boolean is_connected = false;
             List<Integer> whitePointsConnected = null;
             List<List> whitePointsCandidates = new ArrayList<List>();
-            int max_pos = -1; /* pos of white set with more white points */
-            int max_qtd = 0; /* qtd of set with more white points */
             for (int row=0; row < rows; row++) {
                 int value = (int)(mCanvas.get(row, col)[0]);
 
@@ -252,31 +263,107 @@ public class GavriloGraphFilter implements Filter {
 
                 }
                 if (save_set) {
-                    int qtd = whitePointsConnected.size();
-                    if (qtd > max_qtd) {
-                        /* a new max */
-                        max_qtd = qtd;
-                        max_pos = whitePointsCandidates.size();
-                    }
                     //assert(whitePointsConnected != null);
                     whitePointsCandidates.add(whitePointsConnected);
                     whitePointsConnected = null;
                 }
 
             }
-            if (max_pos >= 0) {
-                whitePointsConnected = whitePointsCandidates.get(max_pos);
-                int sum = 0;
-                for (int v: whitePointsConnected) {
-                    sum += v;
+
+            int meanLastPoints = -1;
+
+            if (whitePointsCandidates.size() > 0) {
+                if (lastPoints.size() > 0) {
+                    meanLastPoints = calcMeanPoint(lastPoints);
                 }
-                /* mean point */
-                int value = Math.round(sum/(float)max_qtd);
-                double x, y;
-                x = time * col;
-                y = (rows - value) * voltage;
-                outSeriesX.add(x);
-                outSeriesY.add(y);
+                /* if we have sufficient points and many candidates, sort by the most close to previous points */
+
+
+                if (lastPoints.size() == sufficientPoints && whitePointsCandidates.size() > 1) {
+                    assert(meanLastPoints >= 0);
+                    final int mean = meanLastPoints;
+                    final int limit = limitDistance;
+                    Comparator<List> cmpMoreClosed = new Comparator<List>() {
+                        @Override
+                        public int compare(List lhs, List rhs) {
+                            int rhsDistance = Math.abs(calcMeanPoint(rhs) - mean);
+                            int lhsDistance = Math.abs(calcMeanPoint(lhs) - mean);
+
+                            if (rhsDistance < limit && lhsDistance < limitDistance) {
+                                /* both are close, select based on more points */
+                                return rhs.size() - lhs.size();
+                            }
+                            return lhsDistance - rhsDistance;
+                        }
+                    };
+                    Collections.sort(whitePointsCandidates, cmpMoreClosed);
+                    /* get the candidate with more closed to last points */
+                    whitePointsConnected = whitePointsCandidates.get(0);
+                } else if (whitePointsCandidates.size() > 1) {
+                    /* else sort by the candidate with more points */
+                    Comparator<List> cmpQtd = new Comparator<List>() {
+                        @Override
+                        public int compare(List lhs, List rhs) {
+                            return rhs.size() - lhs.size();
+                        }
+                    };
+                    Collections.sort(whitePointsCandidates, cmpQtd);
+                    /* get the candidate with more points if not too far away*/
+                    for (int i = 0; i < whitePointsCandidates.size(); i++) {
+                        whitePointsConnected = whitePointsCandidates.get(i);
+                        int value = calcMeanPoint(whitePointsConnected);
+                        int distance = Math.abs(meanLastPoints - value);
+
+                        if (distance <= limitDistance) {
+                            break;
+                        }
+
+                    }
+
+                } else {
+                    whitePointsConnected = whitePointsCandidates.get(0);
+                }
+
+
+                int value = calcMeanPoint(whitePointsConnected);
+                boolean addToSeries = true;
+                int distance = Math.abs(meanLastPoints - value);
+                if (meanLastPoints >= 0 && distance > limitDistance) {
+                    /* current value is far away from mean of last values */
+                    addToSeries = false;
+                    Log.d(TAG,
+                            String.format("(col:%d) Point with value %d (mean of last points: %d) is far away [distance: %d, limit %d, candidate size: %d]",
+                                    col, value, meanLastPoints, distance, limitDistance, whitePointsConnected.size())
+                    );
+                    /* verify if it is close of any  strictClosePointsCount */
+                    if (lastPoints.size() > strictClosePointsCount) {
+                        for (int i = 0; i < strictClosePointsCount; i++) {
+                            int diff = Math.abs(value - lastPoints.get(lastPoints.size() - (1+i)));
+                            if (diff <= limitDistance) {
+                                addToSeries = true;
+                                Log.d(TAG, "Point was resgated because it is close from one of the last points");
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (addToSeries) {
+                    double x, y;
+                    x = time * col;
+                    y = (rows - value) * voltage;
+                    outSeriesX.add(x);
+                    outSeriesY.add(y);
+                }
+                /* always fill lastPoints */
+                lastPoints.add(value);
+                if (lastPoints.size() > sufficientPoints) {
+                    lastPoints.removeFirst();
+                }
+                //limitDistance =
+            } else {
+//                /* no white points */
+//                lastPoints = new LinkedList<Integer>();
+
             }
         }
     }
@@ -284,5 +371,14 @@ public class GavriloGraphFilter implements Filter {
     @Override
     public Mat getResult() {
         return mRgbaDst;
+    }
+
+    public static int calcMeanPoint(List<Integer> points) {
+        int sum = 0;
+        for (int v: points) {
+            sum += v;
+        }
+        /* mean point */
+        return Math.round(sum/(float)points.size());
     }
 }
