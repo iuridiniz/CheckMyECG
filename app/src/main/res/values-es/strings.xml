@@ -6,12 +6,13 @@
     <string name="text_about">Esta aplicación trata de evaluar ECG\'s.\nFue desarrollado con fondos del Ministério das Comunicações de Brasil.\nEsta aplicación ganó el concurso InovaAPPS 2014.</string>
     <string name="select_button">¡Este es un ECG!</string>
     <string name="title_activity_camera">Cámara</string>
-    <string name="select_ekg_instructions">Deslice la pantalla con los dedos y seleccione un electrocardiograma</string>
+    <string name="select_ekg_instructions">Por favor, deslizar los dedos y tratar de aislar un ECG</string>
     <string name="action_share">Compartir</string>
     <string name="title_activity_result_ekg">El resultado de ECG </string>
     <string name="title_activity_show_ekg">Seleccione ECG</string>
     <string name="text_ekg_fail" >No se puede determinar nada sobre este EKG</string>
     <string name="pick_derivation">Seleccione la derivación</string>
     <string name="ekg_looks_like">Does not look like an EKG</string>
-    <string name="action_select_ekg"></string>
+    <string name="action_select_ekg">Seleccionar</string>
+    <string name="processing">Espere mientras la imagen se está procesando...</string>
 </resources>
