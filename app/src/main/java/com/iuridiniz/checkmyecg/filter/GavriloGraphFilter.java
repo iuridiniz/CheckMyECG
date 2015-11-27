@@ -296,7 +296,7 @@ public class GavriloGraphFilter implements Filter {
                             int rhsDistance = Math.abs(calcMeanPoint(rhs) - mean);
                             int lhsDistance = Math.abs(calcMeanPoint(lhs) - mean);
 
-                            if (rhsDistance < limit && lhsDistance < limitDistance) {
+                            if (rhsDistance < limit && lhsDistance < limit) {
                                 /* both are close, select based on more points */
                                 return rhs.size() - lhs.size();
                             }
