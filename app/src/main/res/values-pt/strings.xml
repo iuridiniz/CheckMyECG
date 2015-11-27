@@ -6,7 +6,7 @@
     <string name="text_about">Este aplicativo tenta avaliar ECG\'s.\nEle foi desenvolvido usando recursos do Ministério das Comunicações do Brasil.\nEste aplicativo foi vencedor do concurso InovaAPPS 2014.</string>
     <string name="select_button">Isto é um ECG!</string>
     <string name="title_activity_camera">Câmera</string>
-    <string name="select_ekg_instructions">Por favor, deslize os dedos e tente isolar um ECG</string>
+    <string name="select_ekg_instructions">Por favor, deslize os dedos e tente isolar pelo menos duas ondas de um ECG</string>
     <string name="action_share">Compartilhar</string>
     <string name="title_activity_result_ekg">Resultado do ECG</string>
     <string name="title_activity_show_ekg">Selecione o ECG</string>

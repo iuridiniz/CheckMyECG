@@ -9,7 +9,7 @@
     <string name="title_activity_camera">Camera</string>
     <string name="title_activity_show_ekg">Select EKG</string>
     <string name="select_button">This is an EKG!</string>
-    <string name="select_ekg_instructions">Please slide your fingers and try to isolate an EKG</string>
+    <string name="select_ekg_instructions">Please slide your fingers and try to isolate at least two waves of an EKG</string>
     <string name="title_activity_result_ekg">EKG\'s result</string>
     <string name="action_share">Share</string>
     <string name="text_ekg_fail" >Unable to determine anything about this EKG</string>
