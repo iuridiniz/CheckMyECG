@@ -31,6 +31,7 @@ import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.XYPlot;
 import com.androidplot.xy.XYSeries;
 import com.androidplot.xy.XYStepMode;
+import com.iuridiniz.checkmyecg.examiners.EkgExaminer;
 import com.iuridiniz.checkmyecg.filter.GraphFilter2;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -251,7 +252,10 @@ public class ResultEkgActivity extends ActionBarActivity {
     }
 
     private String examinerDi() {
-        return null;
+        //EkgExaminer e = new DiExaminer(mSeriesX, mSeriesY);
+        EkgExaminer e = new EkgExaminer(mSeriesX, mSeriesY, EkgExaminer.Orientation.DOWN);
+        double freq = e.getFrequency();
+        return String.format("Heart rate is %.2f bm", freq);
     }
 
     private String examinerDii() {
