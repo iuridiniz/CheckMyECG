@@ -1,8 +1,13 @@
 package com.iuridiniz.checkmyecg;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
@@ -63,6 +68,8 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
     private Mat ekgEclosed;
     private Mat mEkgOriginal = null;
     private MenuItem mSelectButton;
+    private List<Number> mSeriesX;
+    private List<Number> mSeriesY;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -141,7 +148,7 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
 
         switch(id) {
             case R.id.action_select_ekg:
-                processEKG();
+                openResultEkg();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -264,46 +271,15 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
         return true;
     }
 
-    private void processEKG() {
-        List<Number> seriesX = new ArrayList<Number>();
-        List<Number> seriesY = new ArrayList<Number>();
+    private void openResultEkg() {
+        final Intent intent = new Intent(this, ResultEkgActivity.class);
 
-        if (mEkgOriginal == null) {
-            return;
-        }
-        if (mSelectButton != null) { mSelectButton.setVisible(false); }
+        intent.putExtra(ResultEkgActivity.EXTRA_SERIES_X,
+                ResultEkgActivity.convertNumberListToDoubleArray(mSeriesX));
+        intent.putExtra(ResultEkgActivity.EXTRA_SERIES_Y,
+                ResultEkgActivity.convertNumberListToDoubleArray(mSeriesY));
 
-        GavriloGradeFilter gradeFilter = new GavriloGradeFilter(mEkgOriginal.rows(), mEkgOriginal.cols());
-        gradeFilter.apply(mEkgOriginal);
-
-//        Mat result = new Mat();
-//        mEkgOriginal.copyTo(result, mFilter.getResult());
-//
-//        gradeFilter.drawLines(result);
-//
-//        Bitmap b = Bitmap.createBitmap(result.cols(), result.rows(), Bitmap.Config.ARGB_8888);
-//        Utils.matToBitmap(result, b);
-//        mImageContent.setImageBitmap(b);
-
-        double resolution = gradeFilter.getResolution();
-        if (resolution != Double.POSITIVE_INFINITY) {
-
-            Toast.makeText(this.getApplicationContext(), "Processing ekg", Toast.LENGTH_SHORT).show();
-            ((GavriloGraphFilter)mFilter).getPoints(resolution, seriesX, seriesY);
-
-            /* Open EKG */
-            final Intent intent = new Intent(this, ResultEkgActivity.class);
-
-            intent.putExtra(ResultEkgActivity.EXTRA_SERIES_X,
-                    ResultEkgActivity.convertNumberListToDoubleArray(seriesX));
-            intent.putExtra(ResultEkgActivity.EXTRA_SERIES_Y,
-                    ResultEkgActivity.convertNumberListToDoubleArray(seriesY));
-
-            startActivity(intent);
-        }
-        if (mSelectButton != null) { mSelectButton.setVisible(true); }
-
-
+        startActivity(intent);
     }
 
     private void drawRectangle() {
@@ -349,10 +325,56 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
             mEkgOriginal = roi.clone();
 
             Mat result = mFilter.apply(roi);
-            if (result != null) {
+            if (result != null && mEkgOriginal != null) {
+
+                AsyncTask<Void, Void, Double> task = new AsyncTask<Void, Void, Double>() {
+                    private ProgressDialog dialog = new ProgressDialog(ShowEkgActivity.this);
+
+                    @Override
+                    protected void onPreExecute() {
+                        dialog.setMessage("Processing...");
+                        dialog.show();
+                    }
+
+                    @Override
+                    protected Double doInBackground(Void... voids) {
+
+                        GavriloGradeFilter gradeFilter = new GavriloGradeFilter(mEkgOriginal.rows(), mEkgOriginal.cols());
+                        gradeFilter.apply(mEkgOriginal);
+                        double ekgRatio = 0;
+                        double resolution = gradeFilter.getResolution();
+                        if (resolution != Double.POSITIVE_INFINITY) {
+                            mSeriesX = new ArrayList<Number>();
+                            mSeriesY = new ArrayList<Number>();
+                            ekgRatio = ((GavriloGraphFilter)mFilter).getPoints(resolution, mSeriesX, mSeriesY);
+                            Log.d(TAG, String.format("EkgRatio: %.2f", ekgRatio));
+
+                            if(mSelectButton != null) {
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        mSelectButton.setVisible(true);
+                                    }
+                                });
+                            }
+                        }
+
+                        return ekgRatio;
+                    }
+
+                    @Override
+                    protected void onPostExecute(Double result) {
+
+                        if (result < 0.8) {
+                            Toast.makeText(ShowEkgActivity.this, R.string.ekg_looks_like, Toast.LENGTH_SHORT).show();
+                        }
+                        // after completed finished the progressbar
+                        dialog.dismiss();
+                    }
+                };
+                task.execute();
                 result.copyTo(roi);
 
-                if(mSelectButton != null) { mSelectButton.setVisible(true); }
             }
 
         } else {

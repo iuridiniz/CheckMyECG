@@ -15,4 +15,5 @@
     <string name="text_ekg_fail" >Unable to determine anything about this EKG</string>
     <string name="pick_derivation">Select the derivation</string>
     <string name="action_select_ekg">select</string>
+    <string name="ekg_looks_like">Does not look like an EKG</string>
 </resources>
