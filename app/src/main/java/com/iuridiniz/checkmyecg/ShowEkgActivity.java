@@ -65,12 +65,14 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
     private Mat mImageRgba;
     private boolean mDrawing = false;
     private boolean needDrawECG = false;
-    private Filter mFilter;
     private Mat ekgEclosed;
     private Mat mEkgOriginal = null;
     private MenuItem mSelectButton;
     private List<Number> mSeriesX;
     private List<Number> mSeriesY;
+    /* filters */
+    private GavriloGradeFilter mGradeFilter;
+    private GavriloGraphFilter mGraphFilter;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -260,7 +262,7 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
                         public void run() {
                             //Log.e(TAG, "Drawing");
                             drawRectangle();
-                            mDrawing = false;
+                            //mDrawing = false;
                             needDrawECG = false;
                         }
                     });
@@ -320,65 +322,93 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
             Rect rect = new Rect(new Point(x1, y1), new Point(x2, y2));
             Mat roi = modifiedImageRgba.submat(rect);
 
-            mFilter = new GavriloGraphFilter(roi.rows(), roi.cols());
-            /* save original */
-            mEkgOriginal = roi.clone();
+            mGraphFilter = new GavriloGraphFilter(roi.rows(), roi.cols());
+            mGradeFilter = new GavriloGradeFilter(roi.rows(), roi.cols());
 
-            Mat result = mFilter.apply(roi);
-            if (result != null && mEkgOriginal != null) {
+            Mat resultGrade = mGradeFilter.apply(roi);
+            Mat resultGraph = mGraphFilter.apply(roi);
 
-                AsyncTask<Void, Void, Double> task = new AsyncTask<Void, Void, Double>() {
-                    private ProgressDialog dialog = new ProgressDialog(ShowEkgActivity.this);
+            AsyncTask<Void, Void, Double> task = new AsyncTask<Void, Void, Double>() {
+                private ProgressDialog dialog = new ProgressDialog(ShowEkgActivity.this);
 
-                    @Override
-                    protected void onPreExecute() {
-                        dialog.setMessage(getResources().getString(R.string.processing));
-                        dialog.show();
+                @Override
+                protected void onPreExecute() {
+                    dialog.setMessage(getResources().getString(R.string.processing));
+                    dialog.show();
+                }
+
+                @Override
+                protected Double doInBackground(Void... voids) {
+
+                    double ekgRatio = 0;
+                    List<Number> gradeStats = new ArrayList<Number>();
+                    double gradeRatio = mGradeFilter.getStats(gradeStats);
+
+                    /* user mode as resolution */
+                    double resolution = (double) gradeStats.get(GavriloGradeFilter.Stats.MODE.ordinal());
+
+                    if ((int)resolution == 0) {
+                        /* use mean as resolution if mode is zero */
+                        resolution = (double) gradeStats.get(GavriloGradeFilter.Stats.MEAN.ordinal());
                     }
 
-                    @Override
-                    protected Double doInBackground(Void... voids) {
+                    if (resolution != Double.POSITIVE_INFINITY) {
+                        mSeriesX = new ArrayList<Number>();
+                        mSeriesY = new ArrayList<Number>();
+                        ekgRatio = mGraphFilter.getPoints(resolution, mSeriesX, mSeriesY);
 
-                        GavriloGradeFilter gradeFilter = new GavriloGradeFilter(mEkgOriginal.rows(), mEkgOriginal.cols());
-                        gradeFilter.apply(mEkgOriginal);
-                        double ekgRatio = 0;
-                        double resolution = gradeFilter.getResolution();
-                        if (resolution != Double.POSITIVE_INFINITY) {
-                            mSeriesX = new ArrayList<Number>();
-                            mSeriesY = new ArrayList<Number>();
-                            ekgRatio = ((GavriloGraphFilter)mFilter).getPoints(resolution, mSeriesX, mSeriesY);
-                            Log.d(TAG, String.format("EkgRatio: %.2f", ekgRatio));
 
-                            if(mSelectButton != null) {
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        mSelectButton.setVisible(true);
-                                    }
-                                });
-                            }
+                        if (mSelectButton != null) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mSelectButton.setVisible(true);
+                                }
+                            });
                         }
-
-                        return ekgRatio;
                     }
+                    double ratio = ((ekgRatio * 1) + (1 - Math.abs(1-gradeRatio)) * 1)/2.0;
+                    Log.d(TAG, String.format("Ratio: %.4f [EkgRatio: %.4f, GradeRatio: %.4f]", ratio, ekgRatio, gradeRatio));
+                    return ratio;
+                }
 
-                    @Override
-                    protected void onPostExecute(Double result) {
+                @Override
+                protected void onPostExecute(Double ratio) {
 
-                        if (result < 0.8) {
-                            Toast.makeText(ShowEkgActivity.this, R.string.ekg_looks_like, Toast.LENGTH_SHORT).show();
+                    if (ratio < 0.85) {
+                        Toast.makeText(ShowEkgActivity.this, R.string.ekg_looks_like, Toast.LENGTH_SHORT).show();
+                    }
+                    // after completed finished the progressbar
+                    dialog.dismiss();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mDrawing = false;
                         }
-                        // after completed finished the progressbar
-                        dialog.dismiss();
-                    }
-                };
+                    });
+                }
+            };
+            if (resultGrade != null && resultGraph != null) {
                 task.execute();
-                result.copyTo(roi);
-
+                resultGraph.copyTo(roi);
+                mGradeFilter.drawLines(roi);
             }
+
             mBitmap = Bitmap.createBitmap(modifiedImageRgba.cols(), modifiedImageRgba.rows(), Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(modifiedImageRgba, mBitmap);
             mImageContent.setImageBitmap(mBitmap);
+            AsyncTask.Status s = task.getStatus();
+
+            if (task.getStatus() != AsyncTask.Status.RUNNING) {
+                /* not executed or finished */
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mDrawing = false;
+                    }
+                });
+            }
+
         } else {
             if (x1 < 0) x1 = 0;
             if (x2 < 0) x2 = 0;
@@ -405,6 +435,13 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
             mBitmap = Bitmap.createBitmap(thumbnail.cols(), thumbnail.rows(), Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(thumbnail, mBitmap);
             mImageContent.setImageBitmap(mBitmap);
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mDrawing = false;
+                }
+            });
         }
 
     }
