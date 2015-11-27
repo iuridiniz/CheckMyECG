@@ -348,16 +348,13 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
             /* save original */
             mEkgOriginal = roi.clone();
 
-            mFilter.apply(roi);
+            Mat result = mFilter.apply(roi);
+            if (result != null) {
+                result.copyTo(roi);
 
-            //GraphFilter f = new GraphFilter(roi.rows(), roi.cols());
-            //GraphFilter2 f = new GraphFilter2(roi.rows(), roi.cols());
+                if(mSelectButton != null) { mSelectButton.setVisible(true); }
+            }
 
-            //f.apply(mFilter.getResult());
-
-            mFilter.getResult().copyTo(roi);
-
-            if(mSelectButton != null) { mSelectButton.setVisible(true); }
         } else {
             /* From: http://stackoverflow.com/questions/24480751/how-to-create-a-semi-transparent-shape */
             Mat color = new Mat(roi.size(), CvType.CV_8UC4, new Scalar(0xFF, 0xFF, 0xFF, 0x00));

@@ -102,6 +102,12 @@ public class GavriloGraphFilter implements Filter {
 
     @Override
     public Mat apply(Mat rgba) {
+
+        if (rgba.rows() < mSlices*2 || rgba.cols() < mSlices*2) {
+            /* insufficient data */
+            return null;
+        }
+
         /* convert to HSV */
         /* HSV first */
         Imgproc.cvtColor(rgba, mRgb, Imgproc.COLOR_RGBA2RGB);
@@ -181,6 +187,7 @@ public class GavriloGraphFilter implements Filter {
 
         mContours.clear();
         /* FIXME: there's a kind of memory leak here (findContours), We need to call gc.collect in order to free resources */
+
         Imgproc.findContours(mEdged, mContours, mHierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
         if (mContours.size() == 0) {
