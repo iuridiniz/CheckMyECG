@@ -15,4 +15,8 @@
     <string name="ekg_looks_like">Does not look like an bueno EKG</string>
     <string name="action_select_ekg">Seleccionar</string>
     <string name="processing">Espere mientras la imagen se está procesando...</string>
+    <string name="result_tachycardia">El ECG muestra la taquicardia con .2f% bpm</string>
+    <string name="result_normacardia">La frecuencia cardíaca parece típico con .2f% bpm</string>
+    <string name="result_bradycardia">El ECG muestra la bradicardia con .2f% bpm</string>
+    <string name="result_unknown"></string>
 </resources>

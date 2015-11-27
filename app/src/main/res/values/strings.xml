@@ -17,4 +17,8 @@
     <string name="action_select_ekg">Select it</string>
     <string name="ekg_looks_like">Does not look like a good EKG</string>
     <string name="processing">Wait while the image is being processed...</string>
+    <string name="result_bradycardia">The EKG shows a bradycardia with %.2f bpm</string>
+    <string name="result_tachycardia">The EKG shows a tachycardia with %.2f bpm</string>
+    <string name="result_normacardia">Heart rate seems normal with %.2f bpm</string>
+    <string name="result_unknown">EKG is not so good to provide any information about it</string>
 </resources>
