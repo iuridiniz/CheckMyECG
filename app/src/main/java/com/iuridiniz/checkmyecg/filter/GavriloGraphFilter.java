@@ -404,7 +404,7 @@ public class GavriloGraphFilter implements Filter {
         if (seriesX.size() > 0) {
             ratio_considered = wellConnectedPoints / (double) seriesX.size();
         }
-        Log.d(TAG, String.format("Well connected points: %d [considered points: %d (ratio: %.2f)|total points: %d (ratio: %.2f)]",
+        Log.d(TAG, String.format("Well connected points: %d [considered points: %d (ratio: %.4f)|total points: %d (ratio: %.4f)]",
                 wellConnectedPoints, seriesX.size(), ratio_considered, cols, ratio_total
         ));
 
