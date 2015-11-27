@@ -384,8 +384,8 @@ public class GavriloGraphFilter implements Filter {
             }
         }
 
-        double ratio_total = Double.POSITIVE_INFINITY;
-        double ratio_considered = Double.POSITIVE_INFINITY;
+        double ratio_total = 0;
+        double ratio_considered = 0;
         if (cols > 0) {
             ratio_total = wellConnectedPoints/(double)cols;
         }
