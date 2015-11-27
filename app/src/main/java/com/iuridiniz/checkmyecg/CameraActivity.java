@@ -4,200 +4,105 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
-import android.view.SurfaceView;
-import android.view.View;
-import android.view.WindowManager;
-import android.widget.ImageButton;
 
-import com.iuridiniz.checkmyecg.filter.Filter;
-import com.iuridiniz.checkmyecg.filter.NullFilter;
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.OpenCVLoader;
-import org.opencv.core.Mat;
-import org.opencv.imgproc.Imgproc;
-
-public class CameraActivity extends Activity implements CameraBridgeViewBase.CvCameraViewListener2 {
+public class CameraActivity extends Activity {
 
     private static final String TAG = "ActivityCamera";
-    private boolean mOpenCvLoaded = false;
-    private CameraBridgeViewBase mPreview;
-
-    private Filter mFilter;
-
-    private ImageButton mCaptureButton;
+    private static final int CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE = 100;
+    private Uri photoUri;
+    private String photoPath;
+    public static final int MEDIA_TYPE_IMAGE = 1;
+    public static final int MEDIA_TYPE_VIDEO = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_camera);
+        //setContentView(R.layout.activity_camera);
+        File f = getOutputMediaFile(MEDIA_TYPE_IMAGE, getString(R.string.app_name)); // create a file to save the image
+        photoUri = Uri.fromFile(f);
+        photoPath = f.getPath();
 
-        mCaptureButton = (ImageButton) findViewById(R.id.capture_button);
-        mCaptureButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d(TAG, "Capture Button clicked");
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        takePhoto();
-                    }
-                });
-            }
-        });
-
-        /* Keep the screen on */
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        /* start openCV */
-        /* try static initialization */
-        if (OpenCVLoader.initDebug()) {
-
-            Log.i(TAG, "OpenCV loaded successfully (static initialization)");
-            mOpenCvLoaded = true;
-            return;
-        }
-
-        /* binaries not included, use OpenCV manager */
-        Log.i(TAG, "OpenCV libs not included on APK, trying async initialization");
-        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_10, this, new BaseLoaderCallback(this) {
-            @Override
-            public void onManagerConnected(int status) {
-                switch (status) {
-                    case BaseLoaderCallback.SUCCESS:
-                        Log.i(TAG, "OpenCV loaded successfully (async initialization)");
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                mOpenCvLoaded = true;
-                                createCameraPreview();
-                            }
-                        });
-                        break;
-                    default:
-                        super.onManagerConnected(status);
-                        break;
-                }
-            }
-        });
-
+        // create Intent to take a picture and return control to the calling application
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri); // set the image file name
+        // start the image capture Intent
+        startActivityForResult(intent, CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE);
     }
 
-    private void takePhoto() {
-        /* save current image */
-        Mat rgba = mFilter.getResult();
+    private static File getOutputMediaFile(int type, String appName) {
+        // To be safe, you should check that the SDCard is mounted
+        // using Environment.getExternalStorageState() before doing this.
 
-        if (rgba == null) {
-            Log.e(TAG, "There's no photo");
-            finish();
-            return;
-        }
-        TakePhoto takePhoto = TakePhoto.invoke(this, rgba);
-        if (takePhoto.hasError()) {
-            finish();
-            Log.e(TAG, takePhoto.getErrorString(), takePhoto.getException());
-            return;
-        }
-        Uri uri = takePhoto.getUri();
-        String photoPath = takePhoto.getPhotoPath();
+        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES), appName);
+        // This location works best if you want the created images to be shared
+        // between applications and persist after your app has been uninstalled.
 
-        /* Open the photo */
-        final Intent intent = new Intent(this, SelectEkgActivity.class);
-        intent.putExtra(SelectEkgActivity.EXTRA_PHOTO_URI, uri);
-        intent.putExtra(SelectEkgActivity.EXTRA_PHOTO_DATA_PATH, photoPath);
-        startActivity(intent);
+        // Create the storage directory if it does not exist
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
+                Log.d(TAG, "failed to create directory");
+                return null;
+            }
+        }
+
+        // Create a media file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        File mediaFile;
+        if (type == MEDIA_TYPE_IMAGE) {
+            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
+                    "IMG_" + timeStamp + ".jpg");
+        } else if (type == MEDIA_TYPE_VIDEO) {
+            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
+                    "VID_" + timeStamp + ".mp4");
+        } else {
+            return null;
+        }
+
+        return mediaFile;
     }
-
-    private void createCameraPreview() {
-        /* Create our Preview */
-        if (mPreview == null) {
-            mPreview = (CameraBridgeViewBase) findViewById(R.id.camera_view);
-            mPreview.setVisibility(SurfaceView.VISIBLE);
-            mPreview.setCvCameraViewListener(this);
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == CAPTURE_IMAGE_ACTIVITY_REQUEST_CODE) {
+            if (resultCode == RESULT_OK) {
+                final Intent intent = new Intent(this, SelectEkgActivity.class);
+                intent.putExtra(SelectEkgActivity.EXTRA_PHOTO_URI, photoUri);
+                intent.putExtra(SelectEkgActivity.EXTRA_PHOTO_DATA_PATH, photoPath);
+                startActivity(intent);
+            } else if (resultCode == RESULT_CANCELED) {
+                // User cancelled the image capture
+            } else {
+                // Image capture failed, advise user
+            }
+            finish();
         }
-
-        mPreview.enableView();
 
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        if (mOpenCvLoaded) {
-            createCameraPreview();
-        }
+
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mPreview != null) {
-            mPreview.disableView();
-        }
+
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        if (mPreview != null) {
-            mPreview.disableView();
-        }
-    }
-
-    @Override
-    public void onCameraViewStarted(int width, int height) {
-        mFilter = new NullFilter(height, width);
-    }
-
-    @Override
-    public void onCameraViewStopped() {
 
     }
 
-    @Override
-    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
-        /* show previews */
-        Mat src = null, bottomLeft = null, topLeft = null, topRight = null, bottomRight = null;
-
-        src = inputFrame.rgba();
-        Mat graph = mFilter.apply(src);
-
-        drawMini(graph, topLeft, bottomLeft, topRight, bottomRight);
-
-        return graph;
-    }
-
-    private void drawMini(Mat dst, Mat topLeft, Mat bottomLeft, Mat topRight, Mat bottomRight) {
-        int dstHeight = dst.rows();
-        int dstWidth = dst.cols();
-
-        int dstRoiHeight = dstHeight / 4;
-        int dstRoiWidth = dstWidth / 4;
-
-        Mat dstRoi;
-
-        if (topLeft != null) {
-            /* draw topLeft into top left corner */
-            dstRoi = dst.submat(0, dstRoiHeight, 0, dstRoiWidth);
-            Imgproc.resize(topLeft, dstRoi, dstRoi.size());
-        }
-        if (bottomLeft != null) {
-            /* draw bottomLeft into bottom left corner */
-            dstRoi = dst.submat(dstHeight - dstRoiHeight, dstHeight, 0, dstRoiWidth);
-            Imgproc.resize(bottomLeft, dstRoi, dstRoi.size());
-        }
-        if (topRight != null) {
-            /* draw topRight into top right corner */
-            dstRoi = dst.submat(0, dstRoiHeight, dstWidth - dstRoiWidth, dstWidth);
-            Imgproc.resize(topRight, dstRoi, dstRoi.size());
-        }
-        if (bottomRight != null) {
-            /* draw bottomRight into bottom right corner */
-            dstRoi = dst.submat(dstHeight - dstRoiHeight, dstHeight, dstWidth - dstRoiWidth, dstWidth);
-            Imgproc.resize(bottomRight, dstRoi, dstRoi.size());
-        }
-    }
 
 }
