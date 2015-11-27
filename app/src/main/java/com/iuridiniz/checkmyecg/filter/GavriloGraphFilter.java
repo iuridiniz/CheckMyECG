@@ -58,6 +58,7 @@ public class GavriloGraphFilter implements Filter {
     }
 
     public GavriloGraphFilter(int rows, int cols, int slices, double areaPercent, double lightAdjust) {
+
         mSlices = slices;
         mAreaPercent = areaPercent;
         mLightAdjust = lightAdjust;
@@ -208,7 +209,7 @@ public class GavriloGraphFilter implements Filter {
             Scalar color = new Scalar(255);
             thinkness -= i*2;
             thinkness = thinkness < 1?1:thinkness;
-
+            Log.d(TAG, String.format("Contour %d: size: %d", i, mContours.get(i).rows()));
             Imgproc.drawContours(mCanvas, mContours, i, color, thinkness);
         }
         /* erode and dilate */
@@ -217,16 +218,21 @@ public class GavriloGraphFilter implements Filter {
         Imgproc.erode(mCanvas, mCanvas, kernelErode);
         Imgproc.dilate(mCanvas, mCanvas, kernelDilate);
 
+        Log.d(TAG, String.format("Contours Total size: %d", mContours.size()));
+
     }
 
-    public void getPoints(double resolution, List<Number> outSeriesX, List<Number> outSeriesY) {
+
+    public double getPoints(double resolution, List<Number> outSeriesX, List<Number> outSeriesY) {
         int cols = mCanvas.cols();
         int rows = mCanvas.rows();
 
         boolean flag = false;
 
-        //List<Number> seriesX = new ArrayList<Number>();
-        //List<Number> seriesY = new ArrayList<Number>();
+        int wellConnectedPoints = 0;
+
+        List<Number> seriesX = new ArrayList<Number>();
+        List<Number> seriesY = new ArrayList<Number>();
 
         /* find points analyzing each column */
         double time = 0.04/resolution;
@@ -355,13 +361,15 @@ public class GavriloGraphFilter implements Filter {
                             }
                         }
                     }
+                } else {
+                    wellConnectedPoints += 1;
                 }
                 if (addToSeries) {
                     double x, y;
                     x = time * col;
                     y = (rows - value) * voltage;
-                    outSeriesX.add(x);
-                    outSeriesY.add(y);
+                    seriesX.add(x);
+                    seriesY.add(y);
                 }
                 if (!resgated) {
                     lastPoints.add(value);
@@ -370,13 +378,33 @@ public class GavriloGraphFilter implements Filter {
                 if (lastPoints.size() > sufficientPoints) {
                     lastPoints.removeFirst();
                 }
-                //limitDistance =
             } else {
 //                /* no white points */
 //                lastPoints = new LinkedList<Integer>();
-
             }
         }
+
+        double ratio_total = Double.POSITIVE_INFINITY;
+        double ratio_considered = Double.POSITIVE_INFINITY;
+        if (cols > 0) {
+            ratio_total = wellConnectedPoints/(double)cols;
+        }
+        if (seriesX.size() > 0) {
+            ratio_considered = wellConnectedPoints/(double)seriesX.size();
+        }
+        Log.d(TAG, String.format("Well connected points: %d [considered points: %d (ratio: %.2f)|total points: %d (ratio: %.2f)]",
+                wellConnectedPoints, seriesX.size(), ratio_considered, cols, ratio_total
+        ));
+
+        if (outSeriesX != null) {
+            outSeriesX.addAll(seriesX);
+        }
+
+        if (outSeriesY != null) {
+            outSeriesY.addAll(seriesY);
+        }
+
+        return (1.0 * ratio_considered + 1.5 * ratio_total)/2.5;
     }
 
     @Override
