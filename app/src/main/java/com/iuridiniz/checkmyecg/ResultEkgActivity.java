@@ -255,51 +255,58 @@ public class ResultEkgActivity extends ActionBarActivity {
         //EkgExaminer e = new DiExaminer(mSeriesX, mSeriesY);
         EkgExaminer e = new EkgExaminer(mSeriesX, mSeriesY, EkgExaminer.Orientation.DOWN);
         double freq = e.getFrequency();
-        return String.format("Heart rate is %.2f bm", freq);
+        if (freq < 60) {
+            return String.format(getString(R.string.result_bradycardia), freq);
+        } else if (freq >= 60 && freq <= 90) {
+            return String.format(getString(R.string.result_unknown), freq);
+        } else if (freq > 90 && freq <= 300) {
+            return String.format(getString(R.string.result_tachycardia), freq);
+        }
+        return String.format(getString(R.string.result_unknown, freq));
     }
 
     private String examinerDii() {
-        return null;
+        return examinerDi();
     }
 
     private String examinerDiii() {
-        return null;
+        return examinerDi();
     }
 
     private String examinerAvr() {
-        return null;
+        return examinerDi();
     }
 
     private String examinerAvl() {
-        return null;
+        return examinerDi();
     }
 
     private String examinerAvf() {
-        return null;
+        return examinerDi();
     }
 
     private String examinerV1() {
-        return null;
+        return examinerDi();
     }
 
     private String examinerV2() {
-        return null;
+        return examinerDi();
     }
 
     private String examinerV3() {
-        return null;
+        return examinerDi();
     }
 
     private String examinerV4() {
-        return null;
+        return examinerDi();
     }
 
     private String examinerV5() {
-        return null;
+        return examinerDi();
     }
 
     private String examinerV6() {
-        return null;
+        return examinerDi();
     }
 
 
