@@ -237,10 +237,10 @@ public class GavriloGraphFilter implements Filter {
         /* find points analyzing each column */
         double time = 0.04/resolution;
         double voltage = 0.1/resolution;
-        int sufficientPoints = 80;
+        int sufficientPoints = 10;
         int strictClosePointsCount = sufficientPoints/5;
         //int limitDistance = Integer.MAX_VALUE; /* dinamic */
-        final int limitDistance = 60;
+        final int limitDistance = 80;
 
         LinkedList<Integer> lastPoints = new LinkedList<Integer>();
 
@@ -292,7 +292,7 @@ public class GavriloGraphFilter implements Filter {
                 /* if we have sufficient points and many candidates, sort by the most close to previous points */
 
 
-                if (lastPoints.size() == sufficientPoints && whitePointsCandidates.size() > 1) {
+                if (lastPoints.size() >= sufficientPoints && whitePointsCandidates.size() > 1) {
                     assert(meanLastPoints >= 0);
                     final int mean = meanLastPoints;
                     final int limit = limitDistance;
@@ -302,9 +302,9 @@ public class GavriloGraphFilter implements Filter {
                             int rhsDistance = Math.abs(calcMeanPoint(rhs) - mean);
                             int lhsDistance = Math.abs(calcMeanPoint(lhs) - mean);
 
-                            if (rhsDistance < limit && lhsDistance < limit) {
+                            if (rhsDistance <= limit && lhsDistance <= limit) {
                                 /* both are close, select based on more points */
-                                return rhs.size() - lhs.size();
+                                //return rhs.size() - lhs.size();
                             }
                             return lhsDistance - rhsDistance;
                         }
@@ -322,17 +322,20 @@ public class GavriloGraphFilter implements Filter {
                     };
                     Collections.sort(whitePointsCandidates, cmpQtd);
                     /* get the candidate with more points if not too far away*/
-                    for (int i = 0; i < whitePointsCandidates.size(); i++) {
-                        whitePointsConnected = whitePointsCandidates.get(i);
-                        int value = calcMeanPoint(whitePointsConnected);
-                        int distance = Math.abs(meanLastPoints - value);
+                    if (meanLastPoints >= 0) {
+                        for (int i = 0; i < whitePointsCandidates.size(); i++) {
+                            whitePointsConnected = whitePointsCandidates.get(i);
+                            int value = calcMeanPoint(whitePointsConnected);
+                            int distance = Math.abs(meanLastPoints - value);
 
-                        if (distance <= limitDistance) {
-                            break;
+                            if (distance <= limitDistance) {
+                                break;
+                            }
+
                         }
-
+                    } else {
+                        whitePointsConnected = whitePointsCandidates.get(0);
                     }
-
                 } else {
                     whitePointsConnected = whitePointsCandidates.get(0);
                 }
@@ -340,11 +343,19 @@ public class GavriloGraphFilter implements Filter {
 
                 int value = calcMeanPoint(whitePointsConnected);
                 boolean addToSeries = true;
-                boolean resgated = false;
+                boolean addToLastPoints = true;
+                boolean removeOldestPointFromLastPoints = false;
+
+                if (lastPoints.size() >= sufficientPoints) {
+                    removeOldestPointFromLastPoints = true;
+                }
+
+
                 int distance = Math.abs(meanLastPoints - value);
                 if (meanLastPoints >= 0 && distance > limitDistance) {
                     /* current value is far away from mean of last values */
                     addToSeries = false;
+                    addToLastPoints = false;
                     Log.d(TAG,
                             String.format("(col:%d) Point with value %d (mean of last points: %d) is far away [distance: %d, limit %d, candidate size: %d]",
                                     col, value, meanLastPoints, distance, limitDistance, whitePointsConnected.size())
@@ -355,7 +366,8 @@ public class GavriloGraphFilter implements Filter {
                             int diff = Math.abs(value - lastPoints.get(lastPoints.size() - (1+i)));
                             if (diff <= limitDistance) {
                                 addToSeries = true;
-                                resgated = true;
+                                //removeOldestPointFromLastPoints = true;
+                                addToLastPoints = true;
                                 Log.d(TAG, "Point was resgated because it is close from one of the last points");
                                 break;
                             }
@@ -371,11 +383,11 @@ public class GavriloGraphFilter implements Filter {
                     seriesX.add(x);
                     seriesY.add(y);
                 }
-                if (!resgated) {
+                if (addToLastPoints) {
                     lastPoints.add(value);
                 }
 
-                if (lastPoints.size() > sufficientPoints) {
+                if (lastPoints.size() > 0 && removeOldestPointFromLastPoints) {
                     lastPoints.removeFirst();
                 }
             } else {
@@ -390,7 +402,7 @@ public class GavriloGraphFilter implements Filter {
             ratio_total = wellConnectedPoints/(double)cols;
         }
         if (seriesX.size() > 0) {
-            ratio_considered = wellConnectedPoints/(double)seriesX.size();
+            ratio_considered = wellConnectedPoints / (double) seriesX.size();
         }
         Log.d(TAG, String.format("Well connected points: %d [considered points: %d (ratio: %.2f)|total points: %d (ratio: %.2f)]",
                 wellConnectedPoints, seriesX.size(), ratio_considered, cols, ratio_total
