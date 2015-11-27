@@ -89,12 +89,16 @@ public class GavriloGradeFilter implements Filter{
         double variance = StatUtils.variance(distances, mean);
 
         if (mode.length > 0) {
-            for (int i = 0; i < mode.length; i++) {
+            int i = 0;
+            /* use the bigger */
+            for (i = 0; i < mode.length; i++) {
                 Log.d(TAG, String.format("[distances] %dº most frequent number: %.2f", i+1, mode[i]));
+                most_frequency = mode[i];
             }
-            most_frequency = mode[0];
+
+
         }
-        Log.d(TAG, String.format("[distances] total: %d, mean %.2f, mode: %.2f, variance: %.2f, std dev: %.2f,  min: %.2f, max: %.2f",
+        Log.d(TAG, String.format("[distances] total: %d, mean %.2f, mode: %.2f, vari: %.2f, std dev: %.2f,  min: %.2f, max: %.2f",
                                     qtd-1, mean, most_frequency, variance, Math.sqrt(variance),  min, max)
         );
 
