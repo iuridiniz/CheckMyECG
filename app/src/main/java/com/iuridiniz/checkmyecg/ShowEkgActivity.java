@@ -6,15 +6,20 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
+import android.support.v7.internal.view.menu.ActionMenuItemView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.iuridiniz.checkmyecg.filter.Filter;
+import com.iuridiniz.checkmyecg.filter.GavriloGradeFilter;
 import com.iuridiniz.checkmyecg.filter.GavriloGraphFilter;
+import com.iuridiniz.checkmyecg.filter.GraphFilter;
+import com.iuridiniz.checkmyecg.filter.GraphFilter2;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.OpenCVLoader;
@@ -31,6 +36,8 @@ import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchListener {
@@ -54,6 +61,8 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
     private boolean needDrawECG = false;
     private Filter mFilter;
     private Mat ekgEclosed;
+    private Mat mEkgOriginal = null;
+    private MenuItem mSelectButton;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -73,7 +82,9 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
             mUri = intent.getParcelableExtra(EXTRA_PHOTO_URI);
             mDataPath = intent.getStringExtra(EXTRA_PHOTO_DATA_PATH);
         }
+
         mImageContent = (ImageView) findViewById(R.id.image_content);
+
 
         /* init openCV */
         if (OpenCVLoader.initDebug()) {
@@ -116,10 +127,29 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
     }
 
     @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        boolean result = super.onPrepareOptionsMenu(menu);
+        if (result) {
+            mSelectButton = menu.findItem(R.id.action_select_ekg);
+            mSelectButton.setVisible(false);
+        }
+        return result;
+    }
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        return super.onOptionsItemSelected(item);
+
+        switch(id) {
+            case R.id.action_select_ekg:
+                processEKG();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+
     }
+
+
 
 
     private void onReady(Bundle savedInstanceState) {
@@ -234,6 +264,48 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
         return true;
     }
 
+    private void processEKG() {
+        List<Number> seriesX = new ArrayList<Number>();
+        List<Number> seriesY = new ArrayList<Number>();
+
+        if (mEkgOriginal == null) {
+            return;
+        }
+        if (mSelectButton != null) { mSelectButton.setVisible(false); }
+
+        GavriloGradeFilter gradeFilter = new GavriloGradeFilter(mEkgOriginal.rows(), mEkgOriginal.cols());
+        gradeFilter.apply(mEkgOriginal);
+
+//        Mat result = new Mat();
+//        mEkgOriginal.copyTo(result, mFilter.getResult());
+//
+//        gradeFilter.drawLines(result);
+//
+//        Bitmap b = Bitmap.createBitmap(result.cols(), result.rows(), Bitmap.Config.ARGB_8888);
+//        Utils.matToBitmap(result, b);
+//        mImageContent.setImageBitmap(b);
+
+        double resolution = gradeFilter.getResolution();
+        if (resolution != Double.POSITIVE_INFINITY) {
+
+            Toast.makeText(this.getApplicationContext(), "Processing ekg", Toast.LENGTH_SHORT).show();
+            ((GavriloGraphFilter)mFilter).getPoints(resolution, seriesX, seriesY);
+
+            /* Open EKG */
+            final Intent intent = new Intent(this, ResultEkgActivity.class);
+
+            intent.putExtra(ResultEkgActivity.EXTRA_SERIES_X,
+                    ResultEkgActivity.convertNumberListToDoubleArray(seriesX));
+            intent.putExtra(ResultEkgActivity.EXTRA_SERIES_Y,
+                    ResultEkgActivity.convertNumberListToDoubleArray(seriesY));
+
+            startActivity(intent);
+        }
+        if (mSelectButton != null) { mSelectButton.setVisible(true); }
+
+
+    }
+
     private void drawRectangle() {
         Mat modifiedImageRgba = mImageRgba.clone();
         int maxX = modifiedImageRgba.cols();
@@ -244,9 +316,12 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
         int w = mImageContent.getWidth();
         int h = mImageContent.getHeight();
 
+        if(mSelectButton != null) { mSelectButton.setVisible(false); }
+
         if (w == 0 || h == 0) {
             return;
         }
+
 
         /* transform coordinates (imageX:viewX <--> imageW:viewW) */
         x1 = Math.round(maxX / (float) w * x1);
@@ -270,14 +345,26 @@ public class ShowEkgActivity extends ActionBarActivity implements View.OnTouchLi
         Mat roi = modifiedImageRgba.submat(rect);
         if (needDrawECG) {
             mFilter = new GavriloGraphFilter(roi.rows(), roi.cols());
-            Mat result = mFilter.apply(roi);
-            result.copyTo(roi);
+            /* save original */
+            mEkgOriginal = roi.clone();
+
+            mFilter.apply(roi);
+
+            //GraphFilter f = new GraphFilter(roi.rows(), roi.cols());
+            //GraphFilter2 f = new GraphFilter2(roi.rows(), roi.cols());
+
+            //f.apply(mFilter.getResult());
+
+            mFilter.getResult().copyTo(roi);
+
+            if(mSelectButton != null) { mSelectButton.setVisible(true); }
         } else {
             /* From: http://stackoverflow.com/questions/24480751/how-to-create-a-semi-transparent-shape */
             Mat color = new Mat(roi.size(), CvType.CV_8UC4, new Scalar(0xFF, 0xFF, 0xFF, 0x00));
             double alpha = 0.3;
             Core.addWeighted(color, alpha, roi, 1 - alpha, 0, roi);
             Core.rectangle(roi, new Point(0, 0), new Point(roi.cols(), roi.rows()), new Scalar(0xFF, 0xFF, 0x00, 0x00), 5);
+
         }
         mBitmap = Bitmap.createBitmap(modifiedImageRgba.cols(), modifiedImageRgba.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(modifiedImageRgba, mBitmap);

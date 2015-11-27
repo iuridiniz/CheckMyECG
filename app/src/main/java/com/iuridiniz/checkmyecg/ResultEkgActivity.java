@@ -10,6 +10,7 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.graphics.Color;
 import android.net.Uri;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBarActivity;
@@ -18,9 +19,18 @@ import android.support.v7.widget.ShareActionProvider;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.androidplot.xy.BoundaryMode;
+import com.androidplot.xy.LineAndPointFormatter;
+import com.androidplot.xy.PointLabelFormatter;
+import com.androidplot.xy.SimpleXYSeries;
+import com.androidplot.xy.XYPlot;
+import com.androidplot.xy.XYSeries;
+import com.androidplot.xy.XYStepMode;
 import com.iuridiniz.checkmyecg.filter.GraphFilter2;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -48,6 +58,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -59,6 +70,12 @@ public class ResultEkgActivity extends ActionBarActivity {
             "com.iuridiniz.checkmyecg.ResultEkgActivity.extra.PHOTO_URI;";
     public static final String EXTRA_PHOTO_DATA_PATH =
             "com.iuridiniz.checkmyecg.ResultEkgActivity.extra.DATA_PATH;";
+
+    public static final String EXTRA_SERIES_X =
+            "com.iuridiniz.checkmyecg.ResultEkgActivity.extra.SERIES_X;";
+    public static final String EXTRA_SERIES_Y =
+            "com.iuridiniz.checkmyecg.ResultEkgActivity.extra.SERIES_Y;";
+
     static final String TAG = "ResultEkg";
 
     private ShareActionProvider mShareActionProvider;
@@ -67,6 +84,10 @@ public class ResultEkgActivity extends ActionBarActivity {
     private ImageView mImageContent;
     private TextView mTextContent;
     private boolean mOpenCvLoaded = false;
+    private XYPlot mPlot;
+
+    private double[] mSeriesX;
+    private double[] mSeriesY;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -74,10 +95,20 @@ public class ResultEkgActivity extends ActionBarActivity {
         setContentView(R.layout.activity_result_ekg);
 
         final Intent intent = getIntent();
-        mImageUri = intent.getParcelableExtra(EXTRA_PHOTO_URI);
-        mImageDataPath = intent.getStringExtra(EXTRA_PHOTO_DATA_PATH);
+        //mImageUri = intent.getParcelableExtra(EXTRA_PHOTO_URI);
+        //mImageDataPath = intent.getStringExtra(EXTRA_PHOTO_DATA_PATH);
 
-        mImageContent = (ImageView) findViewById(R.id.result_image);
+        mSeriesX = intent.getDoubleArrayExtra(EXTRA_SERIES_X);
+        mSeriesY = intent.getDoubleArrayExtra(EXTRA_SERIES_Y);
+
+        //mImageContent = (ImageView) findViewById(R.id.result_image);
+        mPlot = (XYPlot) findViewById(R.id.result_plot);
+        /* domain is X axis, range is Y axis */
+        //mPlot.setDomainStep(XYStepMode.INCREMENT_BY_VAL, 1);
+        //mPlot.setRangeStep(XYStepMode.INCREMENT_BY_VAL, 5);
+        //mPlot.setRangeBoundaries((Number) (-10), (Number) 10, BoundaryMode.FIXED);
+        mPlot.setVisibility(View.INVISIBLE);
+
         mTextContent = (TextView) findViewById(R.id.result_text);
 
         mTextContent.setText("");
@@ -126,7 +157,8 @@ public class ResultEkgActivity extends ActionBarActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                ResultEkgActivity.this.compareWithDerivation(which);
+                                //ResultEkgActivity.this.compareWithDerivation(which);
+                                ResultEkgActivity.this.showEKG();
                             }
                         });
                     }
@@ -140,6 +172,34 @@ public class ResultEkgActivity extends ActionBarActivity {
         Dialog d = builder.create();
         d.show();
     }
+
+    private void showEKG() {
+        // Create a couple arrays of y-values to plot:
+        Number[] seriesX = {0, 1, 2, 3, 4, 5}; /* sample data */
+        Number[] seriesY = {1, 8, -5, 2, 7, 4}; /* sample data */
+
+        if (mSeriesX != null && mSeriesY != null) {
+            seriesX = convertDoubleArrayToNumberArray(mSeriesX);
+            seriesY = convertDoubleArrayToNumberArray(mSeriesY);
+        }
+        // Turn the above arrays into XYSeries':
+        XYSeries series1 = new SimpleXYSeries(
+                Arrays.asList(seriesX),
+                Arrays.asList(seriesY),
+                "EKG");
+
+        // Create a formatter to use for drawing a series using LineAndPointRenderer
+        // and configure it from xml:
+        LineAndPointFormatter series1Format = new LineAndPointFormatter(Color.BLACK, null, null, null);
+
+        // add a new series' to the xyplot:
+        mPlot.addSeries(series1, series1Format);
+        mPlot.setVisibility(View.VISIBLE);
+        mPlot.invalidate();
+
+    }
+
+
 
     private void compareWithDerivation(int derivationIndex) {
         String[] derivations = getResources().getStringArray(R.array.derivations_array);
@@ -216,6 +276,23 @@ public class ResultEkgActivity extends ActionBarActivity {
         int id = item.getItemId();
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public static Number[] convertDoubleArrayToNumberArray(double[] a) {
+        Number[] r = new Number[a.length];
+        for (int i=0; i<a.length; i++) {
+            r[i] = a[i];
+        }
+        return r;
+    }
+
+    public static double[] convertNumberListToDoubleArray(List<Number> l) {
+
+        double[] r = new double[l.size()];
+        for (int i=0; i<r.length; i++) {
+            r[i] = (double) l.get(i);
+        }
+        return r;
     }
 }
 
@@ -649,4 +726,5 @@ class DbAdapter extends SQLiteOpenHelper {
 
         return matcher;
     }
+
 }
