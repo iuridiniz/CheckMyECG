@@ -90,7 +90,7 @@ public class GavriloGradeFilter implements Filter{
 
         if (mode.length > 0) {
             for (int i = 0; i < mode.length; i++) {
-                Log.d(TAG, String.format("[distances] %dº most frequency number: %.2f", i+1, mode[i]));
+                Log.d(TAG, String.format("[distances] %dº most frequent number: %.2f", i+1, mode[i]));
             }
             most_frequency = mode[0];
         }

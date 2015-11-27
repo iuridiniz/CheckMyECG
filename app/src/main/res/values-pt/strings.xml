@@ -12,7 +12,7 @@
     <string name="title_activity_show_ekg">Selecione o ECG</string>
     <string name="text_ekg_fail" >Não foi possível determinar qualquer coisa sobre este ECG</string>
     <string name="pick_derivation">Selecione a derivação</string>
-    <string name="ekg_looks_like">Não se parece com um bom ECG para analizar</string>
+    <string name="ekg_looks_like">Não se parece com um bom ECG para análise</string>
     <string name="action_select_ekg">Selecionar</string>
     <string name="processing">Espere enquanto a imagem está sendo processada...</string>
 </resources>
