@@ -334,6 +334,7 @@ public class GavriloGraphFilter implements Filter {
 
                 int value = calcMeanPoint(whitePointsConnected);
                 boolean addToSeries = true;
+                boolean resgated = false;
                 int distance = Math.abs(meanLastPoints - value);
                 if (meanLastPoints >= 0 && distance > limitDistance) {
                     /* current value is far away from mean of last values */
@@ -348,6 +349,7 @@ public class GavriloGraphFilter implements Filter {
                             int diff = Math.abs(value - lastPoints.get(lastPoints.size() - (1+i)));
                             if (diff <= limitDistance) {
                                 addToSeries = true;
+                                resgated = true;
                                 Log.d(TAG, "Point was resgated because it is close from one of the last points");
                                 break;
                             }
@@ -361,8 +363,10 @@ public class GavriloGraphFilter implements Filter {
                     outSeriesX.add(x);
                     outSeriesY.add(y);
                 }
-                /* always fill lastPoints */
-                lastPoints.add(value);
+                if (!resgated) {
+                    lastPoints.add(value);
+                }
+
                 if (lastPoints.size() > sufficientPoints) {
                     lastPoints.removeFirst();
                 }
