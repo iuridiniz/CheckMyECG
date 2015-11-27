@@ -200,9 +200,104 @@ public class ResultEkgActivity extends ActionBarActivity {
     private void compareWithDerivation(int derivationIndex) {
         String[] derivations = getResources().getStringArray(R.array.derivations_array);
         String derivation = derivations[derivationIndex];
-        Log.i(TAG, String.format("Comparing the ekg derivation '%s' with pathological base", derivation));
+        Log.i(TAG, String.format("Comparing the EKG derivation '%s' with a pathological base", derivation));
 
+        String ret = null;
+        switch (derivation.toUpperCase()) {
+            case "DI":
+                ret = this.examinerDi();
+                break;
+            case "DII":
+                ret = this.examinerDii();
+                break;
+            case "DIII":
+                ret = this.examinerDiii();
+                break;
+            case "AVR":
+                ret = this.examinerAvr();
+                break;
+            case "AVL":
+                ret = this.examinerAvl();
+                break;
+            case "AVF":
+                ret = this.examinerAvf();
+                break;
+            case "V1":
+                ret = this.examinerV1();
+                break;
+            case "V2":
+                ret = this.examinerV2();
+                break;
+            case "V3":
+                ret = this.examinerV3();
+                break;
+            case "V4":
+                ret = this.examinerV4();
+                break;
+            case "V5":
+                ret = this.examinerV5();
+                break;
+            case "V6":
+                ret = this.examinerV6();
+                break;
+            default:
+                this.finish();
+                Log.d(TAG, "unknow derivation");
+        }
+        if (ret == null) {
+            ret = "";
+        }
+        mTextContent.setText(ret);
     }
+
+    private String examinerDi() {
+        return null;
+    }
+
+    private String examinerDii() {
+        return null;
+    }
+
+    private String examinerDiii() {
+        return null;
+    }
+
+    private String examinerAvr() {
+        return null;
+    }
+
+    private String examinerAvl() {
+        return null;
+    }
+
+    private String examinerAvf() {
+        return null;
+    }
+
+    private String examinerV1() {
+        return null;
+    }
+
+    private String examinerV2() {
+        return null;
+    }
+
+    private String examinerV3() {
+        return null;
+    }
+
+    private String examinerV4() {
+        return null;
+    }
+
+    private String examinerV5() {
+        return null;
+    }
+
+    private String examinerV6() {
+        return null;
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
