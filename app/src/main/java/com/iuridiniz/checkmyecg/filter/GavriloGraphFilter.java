@@ -231,8 +231,8 @@ public class GavriloGraphFilter implements Filter {
         /* find points analyzing each column */
         double time = 0.04/resolution;
         double voltage = 0.1/resolution;
-        int sufficientPoints = 60;
-        int strictClosePointsCount = sufficientPoints/10;
+        int sufficientPoints = 80;
+        int strictClosePointsCount = sufficientPoints/5;
         //int limitDistance = Integer.MAX_VALUE; /* dinamic */
         final int limitDistance = 60;
 
