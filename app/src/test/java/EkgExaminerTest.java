@@ -31,7 +31,8 @@ public class EkgExaminerTest {
     private static final Integer[] SIMPLE_SIGNAL_PEAKS_POS = {1, 3, 8, 10, 13, 18};
     private static final Integer[] SIMPLE_SIGNAL_DEPRESSIONS_POS = {1, 3, 8, 10, 13, 18};
 
-    private static final Integer[] REAL_SIGNAL_PEAKS_POS = {81, 198, 342, 508, 629};
+    private static final Integer[] REAL_SIGNAL_ALL_PEAKS_POS = {1, 33, 52, 81, 198, 291, 301, 342, 362, 404, 427, 461, 482, 508, 629};
+    private static final Integer[] REAL_SIGNAL_ACUTE_PEAKS_POS = {81, 198, 342, 508, 629};
 
     EkgExaminer eSimple;
     EkgExaminer eReal;
@@ -49,17 +50,28 @@ public class EkgExaminerTest {
         Assert.assertEquals(SIMPLE_SIGNAL_Y.length, SIMPLE_SIGNAL_LEN);
     }
     @Test
-    public void ekgExaminer_testPeaksWithoutVoltageSignificancy() {
-        eSimple.setVoltageSignificancy(0.);
+    public void ekgExaminer_testPeaks_Sample() {
+        //eSimple.setVoltageSignificancy(0.);
         LinkedList<Integer> peaks = eSimple.getPeaksPositions();
         Assert.assertArrayEquals(SIMPLE_SIGNAL_PEAKS_POS, peaks.toArray());
     }
 
 
     @Test
-    public void ekgExaminer_testPeaksWithVoltageSignificancy() {
-        eReal.setVoltageSignificancy(0.01);
-        LinkedList<Integer> peaks = eReal.getPeaksPositions();
-        Assert.assertArrayEquals(REAL_SIGNAL_PEAKS_POS, peaks.toArray());
+    public void ekgExaminer_testPeaks_Real() {
+        //eReal.setVoltageSignificancy(0.01);
+        LinkedList<Integer> peaks;
+        peaks = eReal.getPeaksPositions();
+        Assert.assertArrayEquals(REAL_SIGNAL_ALL_PEAKS_POS, peaks.toArray());
+
     }
+    @Test
+    public void ekgExaminer_testAcutePeaks_Real() {
+        LinkedList<Integer> peaks;
+        peaks = eReal.getAcutePeaksPositions();
+        Assert.assertArrayEquals(REAL_SIGNAL_ACUTE_PEAKS_POS, peaks.toArray());
+    }
+
+    
+
 }

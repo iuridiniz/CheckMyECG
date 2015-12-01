@@ -3,18 +3,23 @@ package com.iuridiniz.checkmyecg.examiners;
 //import android.util.Log;
 
 import org.apache.commons.math3.stat.StatUtils;
+import org.apache.commons.math3.util.Incrementor;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
  * Created by iuri on 27/11/15.
  */
 public class EkgExaminer {
     private static final String TAG = "EkgExaminer";
+    public static final double ONE_SQUARE_X = 0.04;
+    public static final double ONE_SQUARE_Y = 0.1;
     private final double[] time;
     private final double[] voltage;
     private int[] peaks;
@@ -53,7 +58,6 @@ public class EkgExaminer {
     private final TreeMap<Integer, LinkedList<Integer>> __mapVoltage;
     private final TreeMap<Integer, LinkedList<Integer>> mapTime;
 
-    boolean storeOnTemp = false;
     public final LinkedList<Integer> getPeaksPositions() {
         if (__peaksPositions != null)
             return __peaksPositions;
@@ -63,7 +67,6 @@ public class EkgExaminer {
         if (time.length < 3) {
             return __peaksPositions;
         }
-        LinkedList<Integer> tempSerie = new LinkedList<Integer>();
 
         for (int i = 0; i < time.length; i++) {
             int new_direction;
@@ -76,53 +79,105 @@ public class EkgExaminer {
             if (i+1 == time.length) {
                 /* last */
                 if (direction == 1) {
-                    int pos = i;
-                    if (tempSerie.size() > 0) {
-                        pos = (i - tempSerie.getFirst())/2 + tempSerie.getFirst();
-                    }
-                    __peaksPositions.add(pos);
+                    __peaksPositions.add(i);
                 }
                 continue;
             }
             volt_diff = voltage[i+1] - voltage[i];
-            if (Math.abs(volt_diff) < this.voltageSignificancy) {
-                new_direction = 0;
-                tempSerie.add(i);
-                //storeOnTemp = true;
-            } else {
 
-                if (volt_diff < 0 ) {
-                    new_direction = -1;
-                } else {
-                    new_direction = 1;
-                }
-                if (new_direction == direction) {
-                    tempSerie.clear();
-                }
+            new_direction = 0;
+            if (volt_diff < 0 ) {
+                new_direction = -1;
+            } else if  (volt_diff > 0 ){
+                new_direction = 1;
             }
-            boolean flush = false;
+
             if (new_direction != 0 && new_direction != direction) {
-                flush=true;
-            }
-
-            if (flush) {
-                tempSerie.add(i);
                 if (new_direction == 1) {
                     /* depression */
                 } else if (new_direction == -1){
                     /* peak */
-                    int pos = (tempSerie.getLast()- tempSerie.getFirst())/2 + tempSerie.getFirst() ;
-                    __peaksPositions.add(pos);
-                    //__peaksPositions.add(i);
+                    __peaksPositions.add(i);
                 }
                 direction = new_direction;
-                tempSerie.clear();
-                storeOnTemp = false;
             }
 
         }
+        /* return the median point */
+        for (int i=0; i<__peaksPositions.size(); i++) {
+            int start_pos = __peaksPositions.get(i);
+            int pos = __peaksPositions.get(i);
+            if (pos == 0) {
+                /* peek at start */
+            } else {
+                /* backward start_pos to the first value lower than threshold */
+                while (start_pos > 0 && voltage[start_pos-1] >= voltage[pos]) {
+                    start_pos--;
+                };
+                /* change to median point */
+                int point = (Integer) (pos - start_pos)/2 + start_pos;
+                __peaksPositions.set(i, point);
+            }
+        }
         return __peaksPositions;
     }
+
+    public final LinkedList<Integer> getAcutePeaksPositions() {
+        return getPeaksPositions(1.0, ONE_SQUARE_Y);
+    }
+    public final LinkedList<Integer> getPeaksPositions(double smoothness, /* linear coefficient */
+                                                       double threshhold) {
+
+        LinkedList<Integer> peaks = getPeaksPositions();
+        LinkedList<Integer> result = new LinkedList<Integer>();
+
+        for (int pos: peaks) {
+            /* get previous points */
+            int start_pos = pos;
+            if (pos == 0) {
+            /* peek at start */
+            } else {
+                /* backward start_pos to the first value greather than threashold */
+                while (start_pos > 0 && (voltage[pos] - voltage[start_pos]) < threshhold) {
+                    start_pos--;
+                };
+            }
+            if (start_pos > 0) {
+                double dx = time[pos] - time[start_pos-1];
+                double dy = voltage[pos] - voltage[start_pos-1];
+                double coefficient = dy/dx;
+                if (coefficient >= smoothness) {
+                    result.add(pos);
+                }
+            }
+        }
+
+        return result;
+
+    }
+//        LinkedList<Integer> peaks = getPeaksPositions();
+//        TreeSet<Integer> result = new TreeSet<Integer>();
+//        for (int pos: peaks) {
+//            int start_pos;
+//            int end_pos;
+//            if (pos == 0) {
+//                /* peek at start */
+//                start_pos = 0;
+//            } else {
+//                /* go to pos of first significant */
+//
+//                double curVolt = voltage[pos];
+//                double max = curVolt;
+//                for (start_pos = pos; start_pos >= 0; start_pos--) {
+//                    double prevVolt = voltage[start_pos - 1];
+//                    double diff = curVolt - prevVolt;
+//                    /* always diff > 0 */
+//                    if (diff >= smoothness)
+//                }
+//            }
+//        }
+//    }
+
 
     public void setVoltageSignificancy(double voltageSignificancy) {
         this.voltageSignificancy = voltageSignificancy;
@@ -133,7 +188,7 @@ public class EkgExaminer {
     public enum Orientation {
         UP, DOWN
     };
-    /* 0.1v  is the equivalent of little square in voltage axis */
+    /* 0.1 mv  is the equivalent of little square in voltage axis */
     /* 0.04s is the equivalent of little square in time axis */
     public static double DEFAULT_VOLTAGE_RESOLUTION = 0.05; /* half of a square */
     public static double DEFAULT_VOLTAGE_SIGNIFICANCY = 0.1; /* one little square */
