@@ -1,62 +1,27 @@
 package com.iuridiniz.checkmyecg.examiners;
 
-//import android.util.Log;
-
-import org.apache.commons.math3.stat.StatUtils;
-import org.apache.commons.math3.util.Incrementor;
+import org.apache.commons.math3.util.Pair;
 
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.SortedSet;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 /**
  * Created by iuri on 27/11/15.
  */
 public class EkgExaminer {
-    private static final String TAG = "EkgExaminer";
+    public enum Orientation {
+        UP, DOWN
+    };
     public static final double ONE_SQUARE_X = 0.04;
     public static final double ONE_SQUARE_Y = 0.1;
+
     private final double[] time;
     private final double[] voltage;
-    private int[] peaks;
-    private int[] depressions;
     private LinkedList<Integer> __peaksPositions = null;
-    private double voltageSignificancy;
+    private final Orientation normalOrientation;
 
-    public EkgExaminer(double[] signalX, double[] signalY) {
-        this(signalX, signalY, Orientation.DOWN);
-    }
-
-    private TreeMap<Integer, LinkedList<Integer>> getMapVoltage() {
-        if (__mapVoltage.size() == 0) {
-            /* try to be lazy */
-            double max_voltage = StatUtils.max(voltage);
-            double min_voltage = StatUtils.min(voltage);
-            //Log.d(TAG, String.format("max_voltage: %.4f", max_voltage));
-            //Log.d(TAG, String.format("min_voltage: %.4f", min_voltage));
-            for (int i = 0; i < voltage.length; i++) {
-                int key = (int) (voltage[i] * (1/ DEFAULT_VOLTAGE_RESOLUTION));
-                List l = __mapVoltage.get(key);
-                if (l == null) {
-                    l = new LinkedList<Integer>();
-                    __mapVoltage.put(key, (LinkedList<Integer>) l);
-                }
-                l.add(i);
-            }
-        }
-        return __mapVoltage;
-    }
-
-    private TreeMap<Integer, LinkedList<Integer>> getMapTime() {
-        return mapTime;
-    }
-
-    private final TreeMap<Integer, LinkedList<Integer>> __mapVoltage;
-    private final TreeMap<Integer, LinkedList<Integer>> mapTime;
 
     public final LinkedList<Integer> getPeaksPositions() {
         if (__peaksPositions != null)
@@ -122,14 +87,12 @@ public class EkgExaminer {
         return __peaksPositions;
     }
 
-    public final LinkedList<Integer> getAcutePeaksPositions() {
-        return getPeaksPositions(1.0, ONE_SQUARE_Y);
-    }
-    public final LinkedList<Integer> getPeaksPositions(double smoothness, /* linear coefficient */
-                                                       double threshhold) {
+
+    public final TreeMap<Integer, Double> getPeaksPositionsAndCoefficients(double smoothness, /* linear coefficient */
+                                                                           double threshold) {
 
         LinkedList<Integer> peaks = getPeaksPositions();
-        LinkedList<Integer> result = new LinkedList<Integer>();
+        TreeMap<Integer, Double> result = new TreeMap<>();
 
         for (int pos: peaks) {
             /* get previous points */
@@ -138,7 +101,7 @@ public class EkgExaminer {
             /* peek at start */
             } else {
                 /* backward start_pos to the first value greather than threashold */
-                while (start_pos > 0 && (voltage[pos] - voltage[start_pos]) < threshhold) {
+                while (start_pos > 0 && (voltage[pos] - voltage[start_pos]) < threshold) {
                     start_pos--;
                 };
             }
@@ -147,104 +110,97 @@ public class EkgExaminer {
                 double dy = voltage[pos] - voltage[start_pos-1];
                 double coefficient = dy/dx;
                 if (coefficient >= smoothness) {
-                    result.add(pos);
+                    result.put(pos, coefficient);
                 }
             }
         }
 
         return result;
-
     }
-//        LinkedList<Integer> peaks = getPeaksPositions();
-//        TreeSet<Integer> result = new TreeSet<Integer>();
-//        for (int pos: peaks) {
-//            int start_pos;
-//            int end_pos;
-//            if (pos == 0) {
-//                /* peek at start */
-//                start_pos = 0;
-//            } else {
-//                /* go to pos of first significant */
-//
-//                double curVolt = voltage[pos];
-//                double max = curVolt;
-//                for (start_pos = pos; start_pos >= 0; start_pos--) {
-//                    double prevVolt = voltage[start_pos - 1];
-//                    double diff = curVolt - prevVolt;
-//                    /* always diff > 0 */
-//                    if (diff >= smoothness)
-//                }
-//            }
-//        }
-//    }
 
+    public final LinkedList<Integer> getPeaksPositions(double smoothness, /* linear coefficient */
+                                                       double threshold) {
 
-    public void setVoltageSignificancy(double voltageSignificancy) {
-        this.voltageSignificancy = voltageSignificancy;
-        this.__peaksPositions = null;
+        TreeMap<Integer, Double> posAndCo = getPeaksPositionsAndCoefficients(smoothness, threshold);
+        return  new LinkedList<>(posAndCo.keySet());
+    }
+
+    public final LinkedList<Integer> getAcutePeaksPositions() {
+        return getPeaksPositions(1.0, ONE_SQUARE_Y);
+    }
+
+    public final TreeMap<Integer, Double> getAcutePeaksPositionsAndCoefficients() {
+        return getPeaksPositionsAndCoefficients(1.0, ONE_SQUARE_Y);
     }
 
 
-    public enum Orientation {
-        UP, DOWN
-    };
-    /* 0.1 mv  is the equivalent of little square in voltage axis */
-    /* 0.04s is the equivalent of little square in time axis */
-    public static double DEFAULT_VOLTAGE_RESOLUTION = 0.05; /* half of a square */
-    public static double DEFAULT_VOLTAGE_SIGNIFICANCY = 0.1; /* one little square */
-    public static double DEFAULT_TIME_SIGNIFICANCY = 0.04; /* one little square */
-
-    private final Orientation normalOrientation;
-
+    public EkgExaminer(double[] signalX, double[] signalY) {
+        this(signalX, signalY, Orientation.DOWN);
+    }
     public EkgExaminer(double[] time, double[] voltage, Orientation o) {
         this.time = time;
         this.voltage = voltage;
         if (time.length != voltage.length) {
-            throw new IllegalArgumentException("time.leght must be equal to voltage.lenght");
+            throw new IllegalArgumentException("time.lenght must be equal to voltage.lenght");
         }
         this.normalOrientation = o;
 
-        this.__mapVoltage = new TreeMap<>();
-        this.mapTime = new TreeMap<>();
-
-        this.voltageSignificancy = this.DEFAULT_VOLTAGE_SIGNIFICANCY;
     }
 
 
     public double getFrequency() {
 
-        double diff_time = 0.0;
-        Double last_time = null;
-        Integer key = null;
+        final TreeMap<Integer, Double> coefficients = getAcutePeaksPositionsAndCoefficients();
+        Integer[] peaks = coefficients.keySet().toArray(new Integer[0]);
 
-        /* start from bottom values */
-        /* FIXME: this algorithm does not catch two peeks with a little peak between them*/
-        key = getMapVoltage().firstKey();
-        while (diff_time < DEFAULT_TIME_SIGNIFICANCY && key != null) {
-            List<Integer> list = getMapVoltage().get(key);
-            Iterator<Integer> it = list.iterator();
-            while (it.hasNext() && diff_time < DEFAULT_TIME_SIGNIFICANCY) {
-                int v = it.next();
-                double cur_time = this.time[v];
-                double cur_voltage = this.voltage[v];
-                //Log.d(TAG, String.format("Voltage: %.4f at %.4f", cur_voltage, cur_time));
-                if (last_time != null) {
-                    diff_time = Math.abs(cur_time - last_time);
-                }
-                /* update last_time */
-                last_time = cur_time;
+        if (peaks.length < 4) {
+            /* insufficient points to determine the frequency */
+            return 0.0;
+        }
+
+        class MyPair extends Pair<Integer, Integer> implements Comparable{
+            final double diffTime;
+            final double diffCoef;
+            final double diffVolt;
+            int points = 0;
+            int coefPoints;
+            final int voltPoints;
+
+            public MyPair(Integer o1, Integer o2) {
+                super(o1, o2);
+                diffTime = Math.abs(time[o1] - time[o2]);
+                diffCoef = Math.abs(coefficients.get(o1) - coefficients.get(o2));
+                diffVolt = Math.abs(voltage[o1] - voltage[o2]);
+
+                coefPoints = (int) (10.0/diffCoef);
+                points += coefPoints >50?50: coefPoints;
+
+                voltPoints = (int) (5.0/diffVolt);
+                points += voltPoints >100?100: voltPoints;
+
             }
-            /* go to next higher key */
-            key = getMapVoltage().higherKey(key);
-        }
-        double bottom_frequency = 0.0;
-        if (diff_time > 0) {
-            //Log.d(TAG, String.format("Bottom difference: %.4f", diff_time));
 
-            bottom_frequency = 60/diff_time;
-        }
 
-        return bottom_frequency;
+            @Override
+            public int compareTo(Object o) {
+                return points - ((MyPair) o).points;
+            }
+        }
+        ArrayList<MyPair> a = new ArrayList<>();
+
+        for(int i = 0; i < peaks.length; i++) {
+            for (int j=i + 1;j< peaks.length; j++) {
+                MyPair p = new MyPair(peaks[i], peaks[j]);
+                a.add(p);
+            }
+        }
+        /* choose the best one */
+        Collections.sort(a);
+        Collections.reverse(a);
+
+        return 60.0/a.get(0).diffTime;
+        //return 60/a.get(0).diffTime;
+
     }
 
 }
