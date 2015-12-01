@@ -1,5 +1,6 @@
 import com.iuridiniz.checkmyecg.examiners.EkgExaminer;
 
+import org.apache.commons.math3.stat.StatUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,6 +34,9 @@ public class EkgExaminerTest {
 
     private static final Integer[] REAL_SIGNAL_ALL_PEAKS_POS = {1, 33, 52, 81, 198, 291, 301, 342, 362, 404, 427, 461, 482, 508, 629};
     private static final Integer[] REAL_SIGNAL_ACUTE_PEAKS_POS = {81, 198, 342, 508, 629};
+    private static final Integer[] REAL_SIGNAL_R_PEEKS_POS = {81, 508};
+    private static final Integer[] REAL_SIGNAL_T_PEEKS_POS = {198, 629};
+
 
     EkgExaminer eSimple;
     EkgExaminer eReal;
@@ -50,15 +54,14 @@ public class EkgExaminerTest {
         Assert.assertEquals(SIMPLE_SIGNAL_Y.length, SIMPLE_SIGNAL_LEN);
     }
     @Test
-    public void ekgExaminer_testPeaks_Sample() {
+    public void ekgExaminer_SampleSignal_testPeaks() {
         //eSimple.setVoltageSignificancy(0.);
         LinkedList<Integer> peaks = eSimple.getPeaksPositions();
         Assert.assertArrayEquals(SIMPLE_SIGNAL_PEAKS_POS, peaks.toArray());
     }
 
-
     @Test
-    public void ekgExaminer_testPeaks_Real() {
+    public void ekgExaminer_RealEKG_testPeaks() {
         //eReal.setVoltageSignificancy(0.01);
         LinkedList<Integer> peaks;
         peaks = eReal.getPeaksPositions();
@@ -66,12 +69,21 @@ public class EkgExaminerTest {
 
     }
     @Test
-    public void ekgExaminer_testAcutePeaks_Real() {
+    public void ekgExaminer_RealEKG_testAcutePeaks() {
         LinkedList<Integer> peaks;
         peaks = eReal.getAcutePeaksPositions();
         Assert.assertArrayEquals(REAL_SIGNAL_ACUTE_PEAKS_POS, peaks.toArray());
     }
 
-    
+    @Test
+    public void ekgExaminer_RealEKG_testFrequency() {
+        double frequency = eReal.getFrequency();
+        double expected_using_r = 60/(REAL_SIGNAL_X[REAL_SIGNAL_R_PEEKS_POS[1]] - REAL_SIGNAL_X[REAL_SIGNAL_R_PEEKS_POS[0]]);
+        double expected_using_t = 60/(REAL_SIGNAL_X[REAL_SIGNAL_T_PEEKS_POS[1]] - REAL_SIGNAL_X[REAL_SIGNAL_T_PEEKS_POS[0]]);
+
+        double expected = StatUtils.mean(new double[] {expected_using_r, expected_using_t});
+        double delta = Math.abs(expected_using_r - expected_using_t);
+        Assert.assertEquals(expected, frequency, delta);
+    }
 
 }
