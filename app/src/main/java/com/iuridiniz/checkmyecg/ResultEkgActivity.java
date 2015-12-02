@@ -258,7 +258,7 @@ public class ResultEkgActivity extends ActionBarActivity {
         if (freq < 60) {
             return String.format(getString(R.string.result_bradycardia), freq);
         } else if (freq >= 60 && freq <= 90) {
-            return String.format(getString(R.string.result_unknown), freq);
+            return String.format(getString(R.string.result_normacardia), freq);
         } else if (freq > 90 && freq <= 300) {
             return String.format(getString(R.string.result_tachycardia), freq);
         }
