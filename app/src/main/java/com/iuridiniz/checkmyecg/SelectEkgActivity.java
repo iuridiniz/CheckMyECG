@@ -17,7 +17,7 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.iuridiniz.checkmyecg.filter.GavriloGradeFilter;
-import com.iuridiniz.checkmyecg.filter.GavriloGraphFilter;
+import com.iuridiniz.checkmyecg.filter.GavriloAdaptedGraphFilter;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.OpenCVLoader;
@@ -65,7 +65,7 @@ public class SelectEkgActivity extends ActionBarActivity implements View.OnTouch
     private List<Number> mSeriesY;
     /* filters */
     private GavriloGradeFilter mGradeFilter;
-    private GavriloGraphFilter mGraphFilter;
+    private GavriloAdaptedGraphFilter mGraphFilter;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -315,7 +315,7 @@ public class SelectEkgActivity extends ActionBarActivity implements View.OnTouch
             Rect rect = new Rect(new Point(x1, y1), new Point(x2, y2));
             Mat roi = modifiedImageRgba.submat(rect);
 
-            mGraphFilter = new GavriloGraphFilter(roi.rows(), roi.cols());
+            mGraphFilter = new GavriloAdaptedGraphFilter(roi.rows(), roi.cols());
             mGradeFilter = new GavriloGradeFilter(roi.rows(), roi.cols());
 
             Mat resultGrade = mGradeFilter.apply(roi);

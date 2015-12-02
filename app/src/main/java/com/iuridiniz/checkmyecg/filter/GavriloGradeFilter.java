@@ -3,7 +3,6 @@ package com.iuridiniz.checkmyecg.filter;
 import android.util.Log;
 
 import org.apache.commons.math3.stat.StatUtils;
-import org.apache.commons.math3.stat.descriptive.moment.Variance;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -12,8 +11,6 @@ import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -45,7 +42,7 @@ public class GavriloGradeFilter implements Filter{
     }
     @Override
     public Mat apply(Mat rgba) {
-        if (rgba.rows() < GavriloGraphFilter.DEFAULT_SLICES * 2 || rgba.cols() < GavriloGraphFilter.DEFAULT_SLICES * 2) {
+        if (rgba.rows() < GavriloAdaptedGraphFilter.DEFAULT_SLICES * 2 || rgba.cols() < GavriloAdaptedGraphFilter.DEFAULT_SLICES * 2) {
             /* insufficient data */
             return null;
         }
