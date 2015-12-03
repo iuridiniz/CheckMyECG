@@ -255,11 +255,11 @@ public class ResultEkgActivity extends ActionBarActivity {
         //EkgExaminer e = new DiExaminer(mSeriesX, mSeriesY);
         EkgExaminer e = new EkgExaminer(mSeriesX, mSeriesY, EkgExaminer.Orientation.DOWN);
         double freq = e.getFrequency();
-        if (freq < 60) {
+        if (freq >= 10 && freq < 60) {
             return String.format(getString(R.string.result_bradycardia), freq);
-        } else if (freq >= 60 && freq <= 90) {
+        } else if (freq >= 60 && freq < 90) {
             return String.format(getString(R.string.result_normacardia), freq);
-        } else if (freq > 90 && freq <= 300) {
+        } else if (freq >= 90 && freq < 300) {
             return String.format(getString(R.string.result_tachycardia), freq);
         }
         return String.format(getString(R.string.result_unknown, freq));
