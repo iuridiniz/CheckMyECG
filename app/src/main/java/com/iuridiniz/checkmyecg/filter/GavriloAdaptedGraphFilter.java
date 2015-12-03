@@ -49,7 +49,10 @@ public class GavriloAdaptedGraphFilter extends GavriloGraphFilter {
 
     @Override
     public Mat apply(Mat rgba) {
-        super.apply(rgba);
+        Mat ret = super.apply(rgba);
+        if (ret == null) {
+            return ret;
+        }
         dilateContours();
         Imgproc.cvtColor(mCanvas, mRgbaDst, Imgproc.COLOR_GRAY2RGBA);
         return mRgbaDst;
