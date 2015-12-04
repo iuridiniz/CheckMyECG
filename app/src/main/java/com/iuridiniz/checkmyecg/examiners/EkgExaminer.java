@@ -191,33 +191,37 @@ public class EkgExaminer {
 
         class MyPair extends Pair<Integer, Integer> implements Comparable{
             final double diffTime;
-            final double diffCoefLeft;
-            final double diffCoefRight;
+            final double relationCoefLeft;
+            final double relationCoefRight;
             final double diffVolt;
-            int points = 0;
-            int coefPoints;
-            final int voltPoints;
+            int score = 0;
+            int coefLeftScore;
+            int coefRightScore;
+            final int voltScore;
 
             public MyPair(Integer o1, Integer o2) {
                 super(o1, o2);
                 diffTime = Math.abs(time[o1] - time[o2]);
-                diffCoefLeft = Math.abs(coefficients.get(o1).getFirst() - coefficients.get(o2).getFirst());
-                diffCoefRight = Math.abs(coefficients.get(o1).getSecond() - coefficients.get(o2).getSecond());
+                relationCoefLeft = Math.abs(1.0 - (coefficients.get(o1).getFirst()/coefficients.get(o2).getFirst()));
+                relationCoefRight = Math.abs(1.0 - (coefficients.get(o1).getSecond()/coefficients.get(o2).getSecond()));
 
                 diffVolt = Math.abs(voltage[o1] - voltage[o2]);
 
-                coefPoints = (int) (10.0/ diffCoefLeft);
-                points += coefPoints >50?50: coefPoints;
+                coefLeftScore = (int) (1.0/ relationCoefLeft);
+                score += coefLeftScore >50?50: coefLeftScore;
 
-                voltPoints = (int) (5.0/diffVolt);
-                points += voltPoints >100?100: voltPoints;
+                coefRightScore = (int) (1.0/ relationCoefRight);
+                score += coefRightScore >50?50: coefRightScore;
+
+                voltScore = (int) (5.0/diffVolt);
+                score += voltScore >100?100: voltScore;
 
             }
 
 
             @Override
             public int compareTo(Object o) {
-                return points - ((MyPair) o).points;
+                return score - ((MyPair) o).score;
             }
         }
         ArrayList<MyPair> a = new ArrayList<>();
