@@ -194,7 +194,7 @@ public class EkgExaminer {
             final double relationCoefLeft;
             final double relationCoefRight;
             final double diffVolt;
-            int score = 0;
+            int cappedScore = 0;
             int coefLeftScore;
             int coefRightScore;
             final int voltScore;
@@ -208,20 +208,28 @@ public class EkgExaminer {
                 diffVolt = Math.abs(voltage[o1] - voltage[o2]);
 
                 coefLeftScore = (int) (1.0/ relationCoefLeft);
-                score += coefLeftScore >50?50: coefLeftScore;
+                cappedScore += coefLeftScore >50?50: coefLeftScore;
 
                 coefRightScore = (int) (1.0/ relationCoefRight);
-                score += coefRightScore >50?50: coefRightScore;
+                cappedScore += coefRightScore >50?50: coefRightScore;
 
-                voltScore = (int) (5.0/diffVolt);
-                score += voltScore >100?100: voltScore;
+                voltScore = (int) (10.0/diffVolt);
+                cappedScore += voltScore >100?100: voltScore;
+
 
             }
 
 
             @Override
             public int compareTo(Object o) {
-                return score - ((MyPair) o).score;
+                /* minor is low score */
+                int r = (new Integer (this.cappedScore)).compareTo(new Integer(((MyPair) o).cappedScore));
+
+                if (r == 0) {
+                    /* minor is lower score on voltage */
+                    r = (new Double (this.voltScore)).compareTo(new Double(((MyPair) o).voltScore));
+                }
+                return r;
             }
         }
         ArrayList<MyPair> a = new ArrayList<>();

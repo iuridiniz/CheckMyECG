@@ -43,6 +43,9 @@ public class EkgExaminerTest {
     private static final Integer[] REAL_SIGNAL_T_PEEKS_POS = {198, 629};
 
     private static final Integer[] REAL_SIGNAL2_ACUTE_PEAKS_POS = {47, 334, 439, 609, 715, 890, 996};
+    private static final Integer[] REAL_SIGNAL2_R_PEEKS_POS = {47, 334, 609, 890};
+    private static final Integer[] REAL_SIGNAL2_T_PEEKS_POS = {439, 715, 996};
+
 
 
     EkgExaminer eSimple;
@@ -96,6 +99,17 @@ public class EkgExaminerTest {
         double frequency = eReal.getFrequency();
         double expected_using_r = 60/(REAL_SIGNAL_X[REAL_SIGNAL_R_PEEKS_POS[1]] - REAL_SIGNAL_X[REAL_SIGNAL_R_PEEKS_POS[0]]);
         double expected_using_t = 60/(REAL_SIGNAL_X[REAL_SIGNAL_T_PEEKS_POS[1]] - REAL_SIGNAL_X[REAL_SIGNAL_T_PEEKS_POS[0]]);
+
+        double expected = StatUtils.mean(new double[] {expected_using_r, expected_using_t});
+        double delta = Math.abs(expected_using_r - expected_using_t);
+        Assert.assertEquals(expected, frequency, delta);
+    }
+
+    @Test
+    public void ekgExaminer_RealEKG2_testFrequency() {
+        double frequency = eReal2.getFrequency();
+        double expected_using_r = 60/(REAL_SIGNAL2_X[REAL_SIGNAL2_R_PEEKS_POS[1]] - REAL_SIGNAL2_X[REAL_SIGNAL2_R_PEEKS_POS[0]]);
+        double expected_using_t = 60/(REAL_SIGNAL2_X[REAL_SIGNAL2_T_PEEKS_POS[1]] - REAL_SIGNAL2_X[REAL_SIGNAL2_T_PEEKS_POS[0]]);
 
         double expected = StatUtils.mean(new double[] {expected_using_r, expected_using_t});
         double delta = Math.abs(expected_using_r - expected_using_t);
