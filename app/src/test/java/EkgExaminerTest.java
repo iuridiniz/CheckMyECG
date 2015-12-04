@@ -42,7 +42,7 @@ public class EkgExaminerTest {
     private static final Integer[] REAL_SIGNAL_R_PEEKS_POS = {81, 508};
     private static final Integer[] REAL_SIGNAL_T_PEEKS_POS = {198, 629};
 
-    private static final Integer[] REAL_SIGNAL2_ACUTE_PEAKS_POS = {47, 58, 334, 439, 609, 715, 890, 992};
+    private static final Integer[] REAL_SIGNAL2_ACUTE_PEAKS_POS = {47, 334, 439, 609, 715, 890, 996};
 
 
     EkgExaminer eSimple;
