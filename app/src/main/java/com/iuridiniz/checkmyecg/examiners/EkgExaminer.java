@@ -223,11 +223,11 @@ public class EkgExaminer {
             @Override
             public int compareTo(Object o) {
                 /* minor is low score */
-                int r = (new Integer (this.cappedScore)).compareTo(new Integer(((MyPair) o).cappedScore));
+                int r = (Integer.valueOf (this.cappedScore)).compareTo(((MyPair) o).cappedScore);
 
                 if (r == 0) {
                     /* minor is lower score on voltage */
-                    r = (new Double (this.voltScore)).compareTo(new Double(((MyPair) o).voltScore));
+                    r = (Double.valueOf (this.voltScore)).compareTo((double) ((MyPair) o).voltScore);
                 }
                 return r;
             }
@@ -245,7 +245,6 @@ public class EkgExaminer {
         Collections.reverse(a);
 
         return 60.0/a.get(0).diffTime;
-        //return 60/a.get(0).diffTime;
 
     }
 
