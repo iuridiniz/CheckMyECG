@@ -71,16 +71,22 @@ public class EkgExaminer {
         /* return the median point */
         for (int i=0; i<__peaksPositions.size(); i++) {
             int start_pos = __peaksPositions.get(i);
+            int end_pos = __peaksPositions.get(i);
             int pos = __peaksPositions.get(i);
-            if (pos == 0) {
-                /* peek at start */
+            if (pos == 0 || end_pos == time.length - 1) {
+                /* peek at start or at end */
             } else {
-                /* backward start_pos to the first value lower than threshold */
+                /* backward start_pos to the first value lower point */
                 while (start_pos > 0 && voltage[start_pos-1] >= voltage[pos]) {
                     start_pos--;
                 };
+                /* forward end_pos to the first value lower point */
+                while (end_pos < time.length - 1 && voltage[end_pos+1] >= voltage[pos]) {
+                    end_pos++;
+                };
+
                 /* change to median point */
-                int point = (Integer) (pos - start_pos)/2 + start_pos;
+                int point = (Integer) (end_pos - start_pos)/2 + start_pos;
                 __peaksPositions.set(i, point);
             }
         }
@@ -88,29 +94,54 @@ public class EkgExaminer {
     }
 
 
-    public final TreeMap<Integer, Double> getPeaksPositionsAndCoefficients(double smoothness, /* linear coefficient */
+    public final TreeMap<Integer, Pair<Double, Double>> getPeaksPositionsAndCoefficients(double smoothness, /* linear coefficient */
                                                                            double threshold) {
 
         LinkedList<Integer> peaks = getPeaksPositions();
-        TreeMap<Integer, Double> result = new TreeMap<>();
+        TreeMap<Integer, Pair<Double, Double>> result = new TreeMap<>();
 
         for (int pos: peaks) {
             /* get previous points */
-            int start_pos = pos;
-            if (pos == 0) {
-            /* peek at start */
+            int startPos = pos;
+            int endPos = pos;
+            if (pos == 0 || pos == time.length - 1) {
+                /* peek at start  or at end */
             } else {
-                /* backward start_pos to the first value greather than threashold */
-                while (start_pos > 0 && (voltage[pos] - voltage[start_pos]) < threshold) {
-                    start_pos--;
+                /* backward startPos to the first value greater than threshold */
+                while (startPos > 0 && Math.abs(voltage[pos] - voltage[startPos]) < threshold) {
+                    startPos--;
                 };
+                /* forward endPos to the first value greater than threshold */
+                while (endPos < (time.length  - 1) && Math.abs(voltage[pos] - voltage[endPos]) < threshold) {
+                    endPos++;
+                };
+
             }
-            if (start_pos > 0) {
-                double dx = time[pos] - time[start_pos-1];
-                double dy = voltage[pos] - voltage[start_pos-1];
-                double coefficient = dy/dx;
-                if (coefficient >= smoothness) {
-                    result.put(pos, coefficient);
+            if (startPos != endPos) {
+                int pointLeft = startPos;
+                int pointRight = endPos;
+
+                double dxLeft, dyLeft;
+                double dxRight, dyRight;
+                double coefficientLeft, coefficientRight;
+                int meanPointLeft, meanPointRight;
+                double meanPoint;
+
+                meanPoint = ((double)pointRight - (double)pointLeft)/2.0 + pointLeft;
+                meanPointLeft = (int)Math.floor(meanPoint);
+                meanPointRight = (int)Math.ceil(meanPoint);
+
+                dxLeft = time[meanPointLeft] - time[pointLeft];
+                dyLeft = voltage[meanPointLeft] - voltage[pointLeft];
+                coefficientLeft = dyLeft/dxLeft;
+
+                dxRight = time[pointRight] - time[meanPointRight];
+                dyRight = voltage[pointRight] - voltage[meanPointRight];
+
+                coefficientRight = dyRight/dxRight;
+
+                if (coefficientLeft >= smoothness && -coefficientRight >=smoothness) {
+                    result.put(pos, new Pair<Double, Double>(coefficientLeft, coefficientRight));
                 }
             }
         }
@@ -121,7 +152,7 @@ public class EkgExaminer {
     public final LinkedList<Integer> getPeaksPositions(double smoothness, /* linear coefficient */
                                                        double threshold) {
 
-        TreeMap<Integer, Double> posAndCo = getPeaksPositionsAndCoefficients(smoothness, threshold);
+        TreeMap<Integer, Pair<Double, Double>> posAndCo = getPeaksPositionsAndCoefficients(smoothness, threshold);
         return  new LinkedList<>(posAndCo.keySet());
     }
 
@@ -129,7 +160,7 @@ public class EkgExaminer {
         return getPeaksPositions(1.0, ONE_SQUARE_Y);
     }
 
-    public final TreeMap<Integer, Double> getAcutePeaksPositionsAndCoefficients() {
+    public final TreeMap<Integer, Pair<Double, Double>> getAcutePeaksPositionsAndCoefficients() {
         return getPeaksPositionsAndCoefficients(1.0, ONE_SQUARE_Y);
     }
 
@@ -150,7 +181,7 @@ public class EkgExaminer {
 
     public double getFrequency() {
 
-        final TreeMap<Integer, Double> coefficients = getAcutePeaksPositionsAndCoefficients();
+        final TreeMap<Integer, Pair<Double, Double>> coefficients = getAcutePeaksPositionsAndCoefficients();
         Integer[] peaks = coefficients.keySet().toArray(new Integer[0]);
 
         if (peaks.length < 4) {
@@ -160,7 +191,8 @@ public class EkgExaminer {
 
         class MyPair extends Pair<Integer, Integer> implements Comparable{
             final double diffTime;
-            final double diffCoef;
+            final double diffCoefLeft;
+            final double diffCoefRight;
             final double diffVolt;
             int points = 0;
             int coefPoints;
@@ -169,10 +201,12 @@ public class EkgExaminer {
             public MyPair(Integer o1, Integer o2) {
                 super(o1, o2);
                 diffTime = Math.abs(time[o1] - time[o2]);
-                diffCoef = Math.abs(coefficients.get(o1) - coefficients.get(o2));
+                diffCoefLeft = Math.abs(coefficients.get(o1).getFirst() - coefficients.get(o2).getFirst());
+                diffCoefRight = Math.abs(coefficients.get(o1).getSecond() - coefficients.get(o2).getSecond());
+
                 diffVolt = Math.abs(voltage[o1] - voltage[o2]);
 
-                coefPoints = (int) (10.0/diffCoef);
+                coefPoints = (int) (10.0/ diffCoefLeft);
                 points += coefPoints >50?50: coefPoints;
 
                 voltPoints = (int) (5.0/diffVolt);
