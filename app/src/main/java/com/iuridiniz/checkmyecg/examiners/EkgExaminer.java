@@ -223,8 +223,8 @@ public class EkgExaminer {
 
     public double getFrequency() {
 
-        final TreeMap<Integer, Pair<Double, Double>> coefficients = getAcutePeaksPositionsAndCoefficients();
-        Integer[] peaks = coefficients.keySet().toArray(new Integer[0]);
+        final TreeMap<Integer, Pair<Double, Double>> coefficientsPeaks = getAcutePeaksPositionsAndCoefficients();
+        Integer[] peaks = coefficientsPeaks.keySet().toArray(new Integer[0]);
 
         if (peaks.length < 4) {
             /* insufficient points to determine the frequency */
@@ -241,11 +241,11 @@ public class EkgExaminer {
             int coefRightScore;
             final int voltScore;
 
-            public MyPair(Integer o1, Integer o2) {
+            public MyPair(Integer o1, Integer o2, TreeMap<Integer, Pair<Double, Double>> coe) {
                 super(o1, o2);
                 diffTime = Math.abs(time[o1] - time[o2]);
-                relationCoefLeft = Math.abs(1.0 - (coefficients.get(o1).getFirst()/coefficients.get(o2).getFirst()));
-                relationCoefRight = Math.abs(1.0 - (coefficients.get(o1).getSecond()/coefficients.get(o2).getSecond()));
+                relationCoefLeft = Math.abs(1.0 - (coe.get(o1).getFirst()/coe.get(o2).getFirst()));
+                relationCoefRight = Math.abs(1.0 - (coe.get(o1).getSecond()/coe.get(o2).getSecond()));
 
                 diffVolt = Math.abs(voltage[o1] - voltage[o2]);
 
@@ -276,7 +276,7 @@ public class EkgExaminer {
 
         for(int i = 0; i < peaks.length; i++) {
             for (int j=i + 1;j< peaks.length; j++) {
-                MyPair p = new MyPair(peaks[i], peaks[j]);
+                MyPair p = new MyPair(peaks[i], peaks[j], coefficientsPeaks);
                 a.add(p);
             }
         }
