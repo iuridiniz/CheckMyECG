@@ -77,11 +77,11 @@ public class EkgExaminer {
                 /* peek at start or at end */
             } else {
                 /* backward start_pos to the first value lower point */
-                while (start_pos > 0 && voltage[start_pos-1] >= voltage[pos]) {
+                while (start_pos > 0 && voltage[start_pos-1] - voltage[pos] >= 0) {
                     start_pos--;
                 };
                 /* forward end_pos to the first value lower point */
-                while (end_pos < time.length - 1 && voltage[end_pos+1] >= voltage[pos]) {
+                while (end_pos < time.length - 1 && voltage[end_pos+1] - voltage[pos] >= 0) {
                     end_pos++;
                 };
 
