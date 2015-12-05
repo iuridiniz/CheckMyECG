@@ -29,70 +29,86 @@ public class EkgExaminer {
         if (__peaksPositions != null)
             return __peaksPositions;
         /* parse peaks */
-        __peaksPositions = new LinkedList<Integer>();
-        int direction = 0;
-        if (time.length < 3) {
-            return __peaksPositions;
+        __peaksPositions = getMaxMin(time, voltage, true);
+        return __peaksPositions;
+    }
+
+    @NonNull
+    private static LinkedList<Integer> getMaxMin(double[] x, double[] y, boolean peaks) {
+
+        if (x.length != y.length) {
+            throw new IllegalArgumentException("x.length must be equal to y.length");
         }
 
-        for (int i = 0; i < time.length; i++) {
-            int new_direction;
+        LinkedList<Integer> positions = new LinkedList<Integer>();
+        int direction = 0;
+        if (x.length < 3) {
+            return positions;
+        }
 
-            double volt_diff;
+        for (int i = 0; i < x.length; i++) {
+            int newDirection;
+
+            double yDiff;
             if (i == 0) {
                 /* fisrt */
             }
 
-            if (i+1 == time.length) {
+            if (i+1 == x.length) {
                 /* last */
                 if (direction == 1) {
-                    __peaksPositions.add(i);
+                    positions.add(i);
                 }
                 continue;
             }
-            volt_diff = voltage[i+1] - voltage[i];
+            yDiff = y[i+1] - y[i];
 
-            new_direction = 0;
-            if (volt_diff < 0 ) {
-                new_direction = -1;
-            } else if  (volt_diff > 0 ){
-                new_direction = 1;
+            newDirection = 0;
+            if (yDiff < 0 ) {
+                newDirection = -1;
+            } else if  (yDiff > 0 ){
+                newDirection = 1;
             }
 
-            if (new_direction != 0 && new_direction != direction) {
-                if (new_direction == 1) {
+            if (newDirection != 0 && newDirection != direction) {
+                if (newDirection == 1 && !peaks) {
                     /* depression */
-                } else if (new_direction == -1){
+                    positions.add(i);
+                } else if (newDirection == -1 && peaks){
                     /* peak */
-                    __peaksPositions.add(i);
+                    positions.add(i);
                 }
-                direction = new_direction;
+                direction = newDirection;
             }
 
         }
         /* return the median point */
-        for (int i=0; i<__peaksPositions.size(); i++) {
-            int start_pos = __peaksPositions.get(i);
-            int end_pos = __peaksPositions.get(i);
-            int pos = __peaksPositions.get(i);
-            if (pos == 0 || end_pos == time.length - 1) {
+        for (int i=0; i<positions.size(); i++) {
+            int startPos = positions.get(i);
+            int endPos = positions.get(i);
+            int pos = positions.get(i);
+            if (pos == 0 || endPos == x.length - 1) {
                 /* peek at start or at end */
             } else {
-                /* backward start_pos to the first value lower point */
-                while (start_pos > 0 && voltage[start_pos-1] - voltage[pos] >= 0) {
-                    start_pos--;
+                /* backward startPos to the first value lower point */
+                int mult = 1;
+                if (!peaks) {
+                    mult = -1;
+                }
+                while (startPos > 0 && (y[startPos-1] - y[pos]) * mult >= 0) {
+                    startPos--;
                 };
-                /* forward end_pos to the first value lower point */
-                while (end_pos < time.length - 1 && voltage[end_pos+1] - voltage[pos] >= 0) {
-                    end_pos++;
+                /* forward endPos to the first value lower point */
+                while (endPos < x.length - 1 && (y[endPos+1] - y[pos]) * mult >= 0) {
+                    endPos++;
                 };
 
                 /* change to median point */
-                int point = (Integer) (end_pos - start_pos)/2 + start_pos;
-                __peaksPositions.set(i, point);
+                int point = (Integer) (endPos - startPos)/2 + startPos;
+                positions.set(i, point);
             }
         }
-        return __peaksPositions;
+        return positions;
     }
 
     public final TreeMap<Integer, Pair<Double, Double>> getPeaksPositionsAndCoefficients(double smoothness, /* linear coefficient */
