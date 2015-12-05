@@ -221,7 +221,7 @@ public class EkgExaminer {
 
 
             @Override
-            public int compareTo(Object o) {
+            public int compareTo(@NonNull Object o) {
                 /* minor is low score */
                 int r = (Integer.valueOf (this.cappedScore)).compareTo(((MyPair) o).cappedScore);
 
