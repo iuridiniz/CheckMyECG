@@ -224,9 +224,11 @@ public class EkgExaminer {
     public double getFrequency() {
 
         final TreeMap<Integer, Pair<Double, Double>> coefficientsPeaks = getAcutePeaksPositionsAndCoefficients();
+        final TreeMap<Integer, Pair<Double, Double>> coefficientsDepressions = getAcuteDepressionsPositionsAndCoefficients();
         Integer[] peaks = coefficientsPeaks.keySet().toArray(new Integer[0]);
+        Integer[] depressions = coefficientsDepressions.keySet().toArray(new Integer[0]);
 
-        if (peaks.length < 4) {
+        if (peaks.length + depressions.length < 4) {
             /* insufficient points to determine the frequency */
             return 0.0;
         }
@@ -277,6 +279,12 @@ public class EkgExaminer {
         for(int i = 0; i < peaks.length; i++) {
             for (int j=i + 1;j< peaks.length; j++) {
                 MyPair p = new MyPair(peaks[i], peaks[j], coefficientsPeaks);
+                a.add(p);
+            }
+        }
+        for(int i = 0; i < depressions.length; i++) {
+            for (int j=i + 1;j< depressions.length; j++) {
+                MyPair p = new MyPair(depressions[i], depressions[j], coefficientsDepressions);
                 a.add(p);
             }
         }
