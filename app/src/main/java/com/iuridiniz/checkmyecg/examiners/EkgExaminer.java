@@ -116,6 +116,48 @@ public class EkgExaminer {
         return positions;
     }
 
+    private static final Pair<Double, Double> getCoefficients(int pos, final double[] x, final double[] y, double threshold) {
+        int startPos = pos;
+        int endPos = pos;
+
+        if (pos > 0) {
+            while (startPos > 0 && Math.abs(y[pos] - y[startPos]) < threshold) {
+                startPos--;
+            };
+        }
+        if (pos < x.length - 1) {
+            while (endPos < (x.length - 1) && Math.abs(y[pos] - y[endPos]) < threshold) {
+                endPos++;
+            }
+
+        }
+
+        if (startPos != endPos) {
+
+            double dxLeft, dyLeft;
+            double dxRight, dyRight;
+            double coefficientLeft, coefficientRight;
+            int meanPointLeft, meanPointRight;
+            double meanPoint;
+
+            meanPoint = ((double) endPos - (double) startPos)/2.0 + startPos;
+            meanPointLeft = (int)Math.floor(meanPoint);
+            meanPointRight = (int)Math.ceil(meanPoint);
+
+            dxLeft = x[meanPointLeft] - x[startPos];
+            dyLeft = y[meanPointLeft] - y[startPos];
+            coefficientLeft = dyLeft/dxLeft;
+
+            dxRight = x[endPos] - x[meanPointRight];
+            dyRight = y[endPos] - y[meanPointRight];
+
+            coefficientRight = dyRight/dxRight;
+
+            return new Pair<Double, Double>(coefficientLeft, coefficientRight);
+        }
+        return null;
+    }
+
     public final TreeMap<Integer, Pair<Double, Double>> getPeaksPositionsAndCoefficients(double smoothness, /* linear coefficient */
                                                                            double threshold) {
 
@@ -123,48 +165,16 @@ public class EkgExaminer {
         TreeMap<Integer, Pair<Double, Double>> result = new TreeMap<>();
 
         for (int pos: peaks) {
-            /* get previous points */
-            int startPos = pos;
-            int endPos = pos;
-            if (pos == 0 || pos == time.length - 1) {
-                /* peek at start  or at end */
-            } else {
-                /* backward startPos to the first value greater than threshold */
-                while (startPos > 0 && Math.abs(voltage[pos] - voltage[startPos]) < threshold) {
-                    startPos--;
-                };
-                /* forward endPos to the first value greater than threshold */
-                while (endPos < (time.length  - 1) && Math.abs(voltage[pos] - voltage[endPos]) < threshold) {
-                    endPos++;
-                };
+            Pair<Double, Double> coefficients = getCoefficients(pos, time, voltage, threshold);
 
+            if (coefficients == null) {
+                continue;
             }
-            if (startPos != endPos) {
-                int pointLeft = startPos;
-                int pointRight = endPos;
+            double coefficientLeft = coefficients.getFirst();
+            double coefficientRight = coefficients.getSecond();
 
-                double dxLeft, dyLeft;
-                double dxRight, dyRight;
-                double coefficientLeft, coefficientRight;
-                int meanPointLeft, meanPointRight;
-                double meanPoint;
-
-                meanPoint = ((double)pointRight - (double)pointLeft)/2.0 + pointLeft;
-                meanPointLeft = (int)Math.floor(meanPoint);
-                meanPointRight = (int)Math.ceil(meanPoint);
-
-                dxLeft = time[meanPointLeft] - time[pointLeft];
-                dyLeft = voltage[meanPointLeft] - voltage[pointLeft];
-                coefficientLeft = dyLeft/dxLeft;
-
-                dxRight = time[pointRight] - time[meanPointRight];
-                dyRight = voltage[pointRight] - voltage[meanPointRight];
-
-                coefficientRight = dyRight/dxRight;
-
-                if (coefficientLeft >= smoothness && -coefficientRight >=smoothness) {
-                    result.put(pos, new Pair<Double, Double>(coefficientLeft, coefficientRight));
-                }
+            if (coefficientLeft >= smoothness && -coefficientRight >=smoothness) {
+                    result.put(pos, coefficients);
             }
         }
 
