@@ -45,6 +45,7 @@ public class EkgExaminerTest {
     private static final Integer[] REAL_SIGNAL2_ACUTE_PEAKS_POS = {47, 334, 439, 609, 715, 890, 996};
     private static final Integer[] REAL_SIGNAL2_R_PEEKS_POS = {47, 334, 609, 890};
     private static final Integer[] REAL_SIGNAL2_T_PEEKS_POS = {439, 715, 996};
+    private static final Integer[] REAL_SIGNAL_DEPRESSIONS_PEAKS_POS = {93, 525};
 
     EkgExaminer eSimple;
     EkgExaminer eReal;
@@ -89,6 +90,13 @@ public class EkgExaminerTest {
         LinkedList<Integer> peaks;
         peaks = eReal.getAcutePeaksPositions();
         Assert.assertArrayEquals(REAL_SIGNAL_ACUTE_PEAKS_POS, peaks.toArray());
+    }
+
+    @Test
+    public void ekgExaminer_RealEKG_testAcuteDepressions() {
+        LinkedList<Integer> peaks;
+        peaks = eReal.getAcuteDepressionsPositions();
+        Assert.assertArrayEquals(REAL_SIGNAL_DEPRESSIONS_PEAKS_POS, peaks.toArray());
     }
 
     @Test

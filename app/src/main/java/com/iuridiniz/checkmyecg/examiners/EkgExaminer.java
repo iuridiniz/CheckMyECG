@@ -158,14 +158,18 @@ public class EkgExaminer {
         return null;
     }
 
-    public final TreeMap<Integer, Pair<Double, Double>> getPeaksPositionsAndCoefficients(double smoothness, /* linear coefficient */
-                                                                           double threshold) {
-
-        LinkedList<Integer> peaks = getPeaksPositions();
+    @NonNull
+    private static TreeMap<Integer, Pair<Double, Double>> getSmoothMaxMin(final LinkedList<Integer> points, final double[] x, final double[] y, double smoothness, double threshold) {
         TreeMap<Integer, Pair<Double, Double>> result = new TreeMap<>();
 
-        for (int pos: peaks) {
-            Pair<Double, Double> coefficients = getCoefficients(pos, time, voltage, threshold);
+        int direction = 0;
+        if (smoothness > 0) {
+            direction = +1;
+        } else if (smoothness < 0) {
+            direction = -1;
+        }
+        for (int pos : points) {
+            Pair<Double, Double> coefficients = getCoefficients(pos, x, y, threshold);
 
             if (coefficients == null) {
                 continue;
@@ -173,27 +177,35 @@ public class EkgExaminer {
             double coefficientLeft = coefficients.getFirst();
             double coefficientRight = coefficients.getSecond();
 
-            if (coefficientLeft >= smoothness && -coefficientRight >=smoothness) {
-                    result.put(pos, coefficients);
+            if ((direction * coefficientLeft) >= (direction * smoothness) && (-1 * direction * coefficientRight) >= (direction * smoothness)) {
+                result.put(pos, coefficients);
             }
         }
-
         return result;
     }
 
-    public final LinkedList<Integer> getPeaksPositions(double smoothness, /* linear coefficient */
-                                                       double threshold) {
-
-        TreeMap<Integer, Pair<Double, Double>> posAndCo = getPeaksPositionsAndCoefficients(smoothness, threshold);
-        return  new LinkedList<>(posAndCo.keySet());
-    }
-
     public final LinkedList<Integer> getAcutePeaksPositions() {
-        return getPeaksPositions(1.0, ONE_SQUARE_Y);
+        TreeMap<Integer, Pair<Double, Double>> result;
+        result = getSmoothMaxMin(getPeaksPositions(), time, voltage, 1.0, ONE_SQUARE_Y);
+        return  new LinkedList<>(result.keySet());
     }
 
     public final TreeMap<Integer, Pair<Double, Double>> getAcutePeaksPositionsAndCoefficients() {
-        return getPeaksPositionsAndCoefficients(1.0, ONE_SQUARE_Y);
+        TreeMap<Integer, Pair<Double, Double>> result;
+        result = getSmoothMaxMin(getPeaksPositions(), time, voltage, 1.0, ONE_SQUARE_Y);
+        return result;
+    }
+
+    public final LinkedList<Integer> getAcuteDepressionsPositions() {
+        TreeMap<Integer, Pair<Double, Double>> result;
+        result = getSmoothMaxMin(getDepressionsPositions(), time, voltage, -1.0, ONE_SQUARE_Y);
+        return  new LinkedList<>(result.keySet());
+    }
+
+    public final TreeMap<Integer, Pair<Double, Double>> getAcuteDepressionsPositionsAndCoefficients() {
+        TreeMap<Integer, Pair<Double, Double>> result;
+        result = getSmoothMaxMin(getDepressionsPositions(), time, voltage, -1.0, ONE_SQUARE_Y);
+        return result;
     }
 
     public EkgExaminer(double[] signalX, double[] signalY) {
