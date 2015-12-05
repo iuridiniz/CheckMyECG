@@ -95,7 +95,6 @@ public class EkgExaminer {
         return __peaksPositions;
     }
 
-
     public final TreeMap<Integer, Pair<Double, Double>> getPeaksPositionsAndCoefficients(double smoothness, /* linear coefficient */
                                                                            double threshold) {
 
@@ -166,10 +165,10 @@ public class EkgExaminer {
         return getPeaksPositionsAndCoefficients(1.0, ONE_SQUARE_Y);
     }
 
-
     public EkgExaminer(double[] signalX, double[] signalY) {
         this(signalX, signalY, Orientation.DOWN);
     }
+
     public EkgExaminer(double[] time, double[] voltage, Orientation o) {
         this.time = time;
         this.voltage = voltage;
@@ -177,9 +176,7 @@ public class EkgExaminer {
             throw new IllegalArgumentException("time.length must be equal to voltage.length");
         }
         this.normalOrientation = o;
-
     }
-
 
     public double getFrequency() {
 
@@ -218,9 +215,7 @@ public class EkgExaminer {
                 voltScore = (int) (10.0/diffVolt);
                 cappedScore += voltScore >100?100: voltScore;
 
-
             }
-
 
             @Override
             public int compareTo(@NonNull Object o) {
