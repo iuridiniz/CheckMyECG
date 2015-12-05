@@ -427,7 +427,7 @@ public class GavriloGraphFilter implements Filter {
                 int acc = 0; /* rows positions accumulated */
 
                 /* store distances ordered */
-                Map<Integer, Integer> distances = new TreeMap<>();
+                TreeMap<Integer, Integer> distances = new TreeMap<>();
 
                 for (int row = 0; row < rows; row++) {
                     int value = (int) (mCanvas.get(row, col)[0]);
@@ -448,17 +448,17 @@ public class GavriloGraphFilter implements Filter {
                         acc = 0;
                     }
                 }
-                /* get the first more close to last point and not so far */
-                for (Map.Entry<Integer, Integer> entry : distances.entrySet()) {
+                /* use the first (the closest to last point) if not so far */
+                Map.Entry<Integer, Integer> entry;
+                entry = distances.firstEntry();
+                if (entry != null){
                     int distance = entry.getKey();
                     int middleRow = entry.getValue();
                     if (distance <= bound) {
                         addToSeries = true;
                         rowToAdd = middleRow;
-                        break;
                     }
                 }
-
             }
             if (addToSeries) {
                 if (col == 1 && contiguousCols) {
