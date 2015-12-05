@@ -22,6 +22,8 @@ public class EkgExaminer {
     private final double[] time;
     private final double[] voltage;
     private LinkedList<Integer> __peaksPositions = null;
+    private LinkedList<Integer> __depressionsPositions = null;
+
     private final Orientation normalOrientation;
 
 
@@ -33,9 +35,21 @@ public class EkgExaminer {
         return __peaksPositions;
     }
 
+    public LinkedList<Integer> getDepressionsPositions() {
+        if (__depressionsPositions != null)
+            return __depressionsPositions;
+        /* parse depressions */
+        __depressionsPositions = getMaxMin(time, voltage, false);
+        return __depressionsPositions;
+    }
+
     @NonNull
     private static LinkedList<Integer> getMaxMin(double[] x, double[] y, boolean peaks) {
 
+        int desiredDirection = 1;
+        if (!peaks) {
+            desiredDirection = -1;
+        }
         if (x.length != y.length) {
             throw new IllegalArgumentException("x.length must be equal to y.length");
         }
@@ -50,13 +64,10 @@ public class EkgExaminer {
             int newDirection;
 
             double yDiff;
-            if (i == 0) {
-                /* fisrt */
-            }
 
             if (i+1 == x.length) {
                 /* last */
-                if (direction == 1) {
+                if (direction == desiredDirection) {
                     positions.add(i);
                 }
                 continue;
@@ -71,11 +82,8 @@ public class EkgExaminer {
             }
 
             if (newDirection != 0 && newDirection != direction) {
-                if (newDirection == 1 && !peaks) {
-                    /* depression */
-                    positions.add(i);
-                } else if (newDirection == -1 && peaks){
-                    /* peak */
+                if (newDirection != desiredDirection) {
+                    /* depression or peak found */
                     positions.add(i);
                 }
                 direction = newDirection;
@@ -88,22 +96,19 @@ public class EkgExaminer {
             int endPos = positions.get(i);
             int pos = positions.get(i);
             if (pos == 0 || endPos == x.length - 1) {
-                /* peek at start or at end */
+                /* peek/depression at start or at end */
             } else {
-                /* backward startPos to the first value lower point */
-                int mult = 1;
-                if (!peaks) {
-                    mult = -1;
-                }
-                while (startPos > 0 && (y[startPos-1] - y[pos]) * mult >= 0) {
+                /* backward startPos to the first value lower/higher point */
+                while (startPos > 0 && (y[startPos-1] - y[pos]) * desiredDirection >= 0) {
                     startPos--;
                 };
-                /* forward endPos to the first value lower point */
-                while (endPos < x.length - 1 && (y[endPos+1] - y[pos]) * mult >= 0) {
+                /* forward endPos to the first value lower/higher point */
+                /* XXX: I think this code is never called */
+                while (endPos < x.length - 1 && (y[endPos+1] - y[pos]) * desiredDirection >= 0) {
                     endPos++;
                 };
 
-                /* change to median point */
+                /* change it to median point */
                 int point = (Integer) (endPos - startPos)/2 + startPos;
                 positions.set(i, point);
             }

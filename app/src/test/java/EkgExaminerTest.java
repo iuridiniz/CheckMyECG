@@ -35,7 +35,7 @@ public class EkgExaminerTest {
     private static final int SIMPLE_SIGNAL_PEAKS_LEN = 6;
     private static final int SIMPLE_SIGNAL_DEPRESSIONS_LEN = 7;
     private static final Integer[] SIMPLE_SIGNAL_PEAKS_POS = {1, 3, 8, 10, 13, 18};
-    private static final Integer[] SIMPLE_SIGNAL_DEPRESSIONS_POS = {1, 3, 8, 10, 13, 18};
+    private static final Integer[] SIMPLE_SIGNAL_DEPRESSIONS_POS = {0, 2, 6, 9, 11, 16, 19};
 
     private static final Integer[] REAL_SIGNAL_ALL_PEAKS_POS = {1, 33, 52, 81, 198, 291, 301, 342, 362, 404, 427, 461, 482, 508, 629};
     private static final Integer[] REAL_SIGNAL_ACUTE_PEAKS_POS = {81, 198, 342, 508, 629};
@@ -69,6 +69,12 @@ public class EkgExaminerTest {
     public void ekgExaminer_SampleSignal_testPeaks() {
         LinkedList<Integer> peaks = eSimple.getPeaksPositions();
         Assert.assertArrayEquals(SIMPLE_SIGNAL_PEAKS_POS, peaks.toArray());
+    }
+
+    @Test
+    public void ekgExaminer_SampleSignal_testDepressions() {
+        LinkedList<Integer> peaks = eSimple.getDepressionsPositions();
+        Assert.assertArrayEquals(SIMPLE_SIGNAL_DEPRESSIONS_POS, peaks.toArray());
     }
 
     @Test
