@@ -1,5 +1,7 @@
 package com.iuridiniz.checkmyecg.examiners;
 
+import android.support.annotation.NonNull;
+
 import org.apache.commons.math3.util.Pair;
 
 import java.util.ArrayList;
