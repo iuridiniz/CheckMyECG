@@ -172,7 +172,7 @@ public class EkgExaminer {
         this.time = time;
         this.voltage = voltage;
         if (time.length != voltage.length) {
-            throw new IllegalArgumentException("time.lenght must be equal to voltage.lenght");
+            throw new IllegalArgumentException("time.length must be equal to voltage.length");
         }
         this.normalOrientation = o;
 
