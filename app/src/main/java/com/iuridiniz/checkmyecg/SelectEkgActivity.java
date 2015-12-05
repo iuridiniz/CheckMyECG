@@ -361,7 +361,7 @@ public class SelectEkgActivity extends ActionBarActivity implements View.OnTouch
                         }
                     }
                     double ratio = ((ekgRatio * 1) + (1 - Math.abs(1-gradeRatio)) * 1)/2.0;
-                    Log.d(TAG, String.format("Ratio: %.4f [EkgRatio: %.4f, GradeRatio: %.4f]", ratio, ekgRatio, gradeRatio));
+                    Log.d(TAG, String.format("Ratio: %.4f [EkgRatio: %.4f, GradeRatio: %.4f (resolution: %.4f)]", ratio, ekgRatio, gradeRatio, resolution));
                     return ratio;
                 }
 
