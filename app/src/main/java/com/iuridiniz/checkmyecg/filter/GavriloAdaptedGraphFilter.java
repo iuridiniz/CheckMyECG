@@ -20,8 +20,7 @@ import java.util.List;
  */
 public class GavriloAdaptedGraphFilter extends GavriloGraphFilter {
 
-    private static final String TAG = "GavriloGraphFilter[2]";
-
+    private static final String TAG = "GraphFilter";
 
     /* countours */
     private final Size mKSize;

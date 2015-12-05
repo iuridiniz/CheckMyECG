@@ -46,7 +46,7 @@ public class SelectEkgActivity extends ActionBarActivity implements View.OnTouch
     public static final String EXTRA_PHOTO_DATA_PATH =
             "com.iuridiniz.checkmyecg.SelectEkgActivity.extra.PHOTO_DATA_PATH";
 
-    public static final String TAG = "EkgShow";
+    public static final String TAG = "SelectEkg";
     private boolean mOpenCvLoaded = false;
     private Uri mUri;
     private String mDataPath;

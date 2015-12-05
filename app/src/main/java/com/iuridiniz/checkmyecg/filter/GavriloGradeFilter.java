@@ -22,8 +22,8 @@ public class GavriloGradeFilter implements Filter{
         MEAN, VARIANCE, STD_DEVIATION, MODE, MIN, MAX
     };
 
-    private static final String TAG = "GavriloGradeFilter";
     public static final int THICKNESS = 2;
+    private static final String TAG = "GradeFilter";
     public static final Scalar COLOR = new Scalar(0x00, 0xFF, 0xFF, 0xFF); /* RGBA */
     private Mat mBinary;
     private Mat mDst;

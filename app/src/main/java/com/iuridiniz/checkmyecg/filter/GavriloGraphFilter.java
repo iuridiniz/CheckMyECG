@@ -27,7 +27,7 @@ import java.util.TreeMap;
  */
 public class GavriloGraphFilter implements Filter {
 
-    private static final String TAG = "GravriloGraphFilter";
+    private static final String TAG = "GraphFilter";
     public static final int DEFAULT_SLICES = 18;
     public static final double DEFAULT_AREA_PERCENT = 0.1;
     public static final double DEFAULT_LIGHT_ADJUST = 0.00058;
